@@ -9,7 +9,7 @@ export default function AutoSaveIndicator() {
 
   const autoSave = useAutoSave({
     enabled,
-    debounceMs: 2000, // 2 seconds
+    debounceMs: 1000, // 1 second — safe for overlapping PUTs
     onSuccess: () => {
       console.log('✅ Auto-saved successfully')
     },

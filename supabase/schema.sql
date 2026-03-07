@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Projects table
+-- Projects table (id is UUID; app uses crypto.randomUUID() for new projects)
 CREATE TABLE IF NOT EXISTS public.projects (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,

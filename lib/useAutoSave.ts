@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from '@/lib/store'
+import { upsertLocalProject } from '@/lib/local-projects'
 
 export function formatTimeAgo(date: Date | null | undefined): string {
   if (!date) return ''
@@ -48,29 +49,77 @@ export function useAutoSave(options: UseAutoSaveOptions): UseAutoSaveReturn {
 
   const hasUnsavedChanges =
     !!currentProject &&
-    currentProject.updatedAt.getTime() !== lastSyncedUpdatedAt.current
+    new Date(currentProject.updatedAt).getTime() !== lastSyncedUpdatedAt.current
 
   const performSave = useCallback(async () => {
     if (!currentProject) return
     setIsSaving(true)
     setError(null)
+    const payload = {
+      name: currentProject.name,
+      description: currentProject.description,
+      files: currentProject.files,
+    }
     try {
-      const payload = {
-        id: currentProject.id,
-        name: currentProject.name,
-        description: currentProject.description,
-        files: currentProject.files,
-        updatedAt: currentProject.updatedAt.toISOString(),
+      const res = await fetch(`/api/project/${currentProject.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              id: currentProject.id,
+              ...payload,
+              updatedAt: new Date(currentProject.updatedAt).toISOString(),
+            })
+          )
+          upsertLocalProject(currentProject)
+        }
+        const now = new Date()
+        lastSavedRef.current = now
+        lastSyncedUpdatedAt.current = new Date(currentProject.updatedAt).getTime()
+        setLastSaved(now)
+        onSuccess?.()
+      } else if (res.status === 401) {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              id: currentProject.id,
+              ...payload,
+              updatedAt: new Date(currentProject.updatedAt).toISOString(),
+            })
+          )
+          upsertLocalProject(currentProject)
+        }
+        const now = new Date()
+        lastSavedRef.current = now
+        lastSyncedUpdatedAt.current = new Date(currentProject.updatedAt).getTime()
+        setLastSaved(now)
+        onSuccess?.()
+      } else {
+        throw new Error(`Save failed: ${res.status}`)
       }
+    } catch (e) {
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            id: currentProject.id,
+            ...payload,
+            updatedAt: new Date(currentProject.updatedAt).toISOString(),
+          })
+        )
+        upsertLocalProject(currentProject)
       }
       const now = new Date()
       lastSavedRef.current = now
-      lastSyncedUpdatedAt.current = currentProject.updatedAt.getTime()
+      lastSyncedUpdatedAt.current = new Date(currentProject.updatedAt).getTime()
       setLastSaved(now)
       onSuccess?.()
-    } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       setError(err)
       onError?.(err)

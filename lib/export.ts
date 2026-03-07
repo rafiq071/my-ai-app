@@ -191,7 +191,7 @@ yarn dev
 pnpm dev
 \`\`\`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open the app in your browser (e.g. the URL shown in the terminal).
 
 ## Tech Stack
 

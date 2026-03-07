@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Split from 'react-split'
 import ProjectsList from '@/components/ProjectsList'
 import ChatPanel from '@/components/ChatPanel'
@@ -12,108 +11,78 @@ import UserProfile from '@/components/UserProfile'
 import AutoSaveIndicator from '@/components/AutoSaveIndicator'
 
 export default function Home() {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#0a0a0f]">
-        <div className="text-center">
-          <div className="text-6xl mb-4 animate-pulse">🚀</div>
-          <p className="text-white text-xl">Loading Lovable Clone...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <main className="h-screen w-screen overflow-hidden bg-[#0a0a0f]">
-      {/* Header */}
-      <header className="h-14 border-b border-[#1f1f2e] flex items-center justify-between px-6 bg-[#0a0a0f]">
+    <main className="h-screen w-screen bg-[#0a0a0f] flex flex-col">
+      
+      {/* HEADER */}
+      <header className="h-14 border-b border-[#1f1f2e] flex items-center justify-between px-6 bg-[#0a0a0f] flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="text-2xl">🚀</div>
           <div>
-            <h1 className="text-xl font-bold text-white glow-text">
+            <h1 className="text-xl font-bold text-white">
               Lovable Clone
             </h1>
-            <p className="text-xs text-gray-500">AI Builder + Deploy + Auth</p>
+            <p className="text-xs text-gray-500">
+              AI Builder + Deploy + Auth
+            </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-2 text-xs text-gray-500">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span>All Systems Ready</span>
-          </div>
           <AutoSaveIndicator />
           <UserProfile />
         </div>
       </header>
 
-      {/* Main content area */}
-      <div className="h-[calc(100vh-3.5rem)] flex flex-col">
-        {/* Top section */}
-        <div className="flex-1">
-          <Split
-            className="split flex h-full"
-            sizes={[15, 20, 65]}
-            minSize={150}
-            gutterSize={2}
-            gutterAlign="center"
-            snapOffset={30}
-            dragInterval={1}
-            direction="horizontal"
-            cursor="col-resize"
-          >
-            {/* Projects list */}
-            <div className="h-full overflow-hidden">
-              <ProjectsList />
+      {/* MAIN CONTENT */}
+      <div className="flex-1 min-h-0">
+        <Split
+          className="flex h-full"
+          sizes={[20, 30, 50]}
+          minSize={200}
+          gutterSize={6}
+          direction="horizontal"
+          cursor="col-resize"
+        >
+          {/* LEFT */}
+          <div className="h-full overflow-auto">
+            <ProjectsList />
+          </div>
+
+          {/* CENTER - CHAT */}
+          <div className="h-full overflow-auto">
+            <ChatPanel />
+          </div>
+
+          {/* RIGHT */}
+          <div className="h-full overflow-hidden flex flex-col">
+            
+            <Split
+              className="flex flex-1"
+              direction="horizontal"
+              sizes={[25, 40, 35]}
+              minSize={150}
+              gutterSize={6}
+              cursor="col-resize"
+            >
+              <div className="overflow-auto">
+                <FileExplorer />
+              </div>
+
+              <div className="overflow-auto">
+                <CodeEditor />
+              </div>
+
+              <div className="overflow-auto">
+                <PreviewPanel />
+              </div>
+            </Split>
+
+            <div className="h-64 border-t border-[#1f1f2e] overflow-auto">
+              <DeploymentPanel />
             </div>
-
-            {/* Chat panel */}
-            <div className="h-full overflow-hidden">
-              <ChatPanel />
-            </div>
-
-            {/* Right section: File Explorer, Editor, Preview */}
-            <div className="h-full overflow-hidden">
-              <Split
-                className="split flex h-full"
-                sizes={[20, 40, 40]}
-                minSize={150}
-                gutterSize={2}
-                gutterAlign="center"
-                snapOffset={30}
-                dragInterval={1}
-                direction="horizontal"
-                cursor="col-resize"
-              >
-                {/* File Explorer */}
-                <div className="h-full overflow-hidden">
-                  <FileExplorer />
-                </div>
-
-                {/* Code Editor */}
-                <div className="h-full overflow-hidden">
-                  <CodeEditor />
-                </div>
-
-                {/* Preview */}
-                <div className="h-full overflow-hidden">
-                  <PreviewPanel />
-                </div>
-              </Split>
-            </div>
-          </Split>
-        </div>
-
-        {/* Bottom deployment panel */}
-        <div className="h-64 border-t border-[#1f1f2e]">
-          <DeploymentPanel />
-        </div>
+          </div>
+        </Split>
       </div>
     </main>
   )

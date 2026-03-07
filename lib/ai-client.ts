@@ -28,6 +28,26 @@ const openai = new OpenAI({
 })
 
 /**
+ * OpenAI streaming: yields content deltas. Use for streaming JSON to client.
+ */
+export async function* createOpenAICompletionStream(options: GenerationOptions): AsyncGenerator<string> {
+  const stream = await openai.chat.completions.create({
+    model: options.model.apiModel,
+    messages: [
+      { role: 'system', content: options.systemPrompt || 'You are an expert full-stack developer.' },
+      { role: 'user', content: options.prompt },
+    ],
+    temperature: options.temperature ?? 0.7,
+    max_tokens: options.maxTokens ?? 4000,
+    stream: true,
+  })
+  for await (const chunk of stream) {
+    const content = chunk.choices?.[0]?.delta?.content
+    if (typeof content === 'string' && content) yield content
+  }
+}
+
+/**
  * Generate with OpenAI (GPT-4)
  */
 async function generateWithOpenAI(options: GenerationOptions): Promise<GenerationResult> {
