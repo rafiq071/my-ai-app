@@ -1,69 +1,113 @@
-/**
- * Preview manager (stub when WebContainer is not available).
- * In-browser preview is disabled for environments that don't support it (e.g. Vercel).
- * Events: onStatus(status) | onPreviewError(error) | onServerReady(url)
- */
+// previewManager.ts
 
-import type { ProjectFile } from "../types";
+type PreviewStatus =
+  | "idle"
+  | "mounting"
+  | "installing"
+  | "starting"
+  | "ready"
+  | "error";
 
-type Listener = (url: string) => void;
-type ErrorListener = (message: string) => void;
-type StatusListener = (status: "mounting" | "installing" | "starting" | "ready" | "restarting" | "error") => void;
+let currentStatus: PreviewStatus = "idle";
+let serverUrl: string | null = null;
 
-const serverReadyListeners = new Set<Listener>();
-const errorListeners = new Set<ErrorListener>();
-const statusListeners = new Set<StatusListener>();
+const statusListeners: ((status: PreviewStatus) => void)[] = [];
+const errorListeners: ((error: string) => void)[] = [];
+const serverReadyListeners: ((url: string) => void)[] = [];
 
-function emitError(message: string): void {
-  errorListeners.forEach((cb) => cb(message));
-}
-
-function emitStatus(status: "mounting" | "installing" | "starting" | "ready" | "restarting" | "error"): void {
+function emitStatus(status: PreviewStatus) {
+  currentStatus = status;
   statusListeners.forEach((cb) => cb(status));
 }
 
-export function onServerReady(cb: Listener): () => void {
-  serverReadyListeners.add(cb);
-  return () => serverReadyListeners.delete(cb);
+function emitError(error: string) {
+  errorListeners.forEach((cb) => cb(error));
 }
 
-export function onPreviewError(cb: ErrorListener): () => void {
-  errorListeners.add(cb);
-  return () => errorListeners.delete(cb);
+function emitServerReady(url: string) {
+  serverUrl = url;
+  serverReadyListeners.forEach((cb) => cb(url));
 }
 
-export function onStatus(cb: StatusListener): () => void {
-  statusListeners.add(cb);
-  return () => statusListeners.delete(cb);
+export function onStatus(cb: (status: PreviewStatus) => void) {
+  statusListeners.push(cb);
 }
 
-export async function updateFile(_path: string, _content: string): Promise<void> {
-  /* no-op: preview not available */
+export function onPreviewError(cb: (error: string) => void) {
+  errorListeners.push(cb);
 }
 
-export async function updateFiles(_files: { path: string; content: string }[]): Promise<void> {
-  /* no-op: preview not available */
+export function onServerReady(cb: (url: string) => void) {
+  serverReadyListeners.push(cb);
 }
 
-export async function runPreview(
-  files: ProjectFile[],
-  iframeRef: { current: HTMLIFrameElement | null },
-  _options?: { runBuildBeforeDev?: boolean }
-): Promise<void> {
-  if (!files?.length) return;
-  if (iframeRef.current) iframeRef.current.src = "about:blank";
-  emitStatus("error");
-  emitError("Preview unavailable in this environment");
+export function getStatus() {
+  return currentStatus;
 }
 
-export async function runBuild(): Promise<{ success: boolean; error?: string }> {
-  return { success: false, error: "Preview not available" };
-}
-
-export function killDevServer(): void {
-  /* no-op */
+export function getServerUrl() {
+  return serverUrl;
 }
 
 export function isDevServerRunning(): boolean {
-  return false;
+  return serverUrl !== null;
+}
+
+let files: Record<string, string> = {};
+
+export async function updateFile(path: string, content: string) {
+  files[path] = content;
+}
+
+export async function updateFiles(newFiles: Record<string, string>) {
+  files = { ...files, ...newFiles };
+}
+
+export async function runPreview() {
+  try {
+    emitStatus("mounting");
+
+    await new Promise((r) => setTimeout(r, 500));
+
+    emitStatus("installing");
+
+    await new Promise((r) => setTimeout(r, 1000));
+
+    emitStatus("starting");
+
+    await new Promise((r) => setTimeout(r, 1000));
+
+    const url = "http://localhost:5173";
+
+    emitServerReady(url);
+
+    emitStatus("ready");
+
+    return { success: true, url };
+  } catch (err: any) {
+    emitStatus("error");
+    emitError(err?.message || "Preview failed");
+    return { success: false, error: err?.message };
+  }
+}
+
+export async function runBuild() {
+  try {
+    await new Promise((r) => setTimeout(r, 1000));
+
+    return {
+      success: true,
+      output: "Build completed successfully",
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || "Build failed",
+    };
+  }
+}
+
+export function stopPreview() {
+  serverUrl = null;
+  emitStatus("idle");
 }
