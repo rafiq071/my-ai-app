@@ -2,23 +2,34 @@ import type { ProjectFile } from "../types";
 
 type Listener = (url: string) => void;
 type ErrorListener = (message: string) => void;
-type StatusListener =
-  | "mounting"
-  | "installing"
-  | "starting"
-  | "ready"
-  | "restarting"
-  | "error";
 
-const serverReadyListeners = new Set<(url: string) => void>();
-const errorListeners = new Set<(msg: string) => void>();
-const statusListeners = new Set<(s: StatusListener) => void>();
+type StatusListener = (
+  status:
+    | "mounting"
+    | "installing"
+    | "starting"
+    | "ready"
+    | "restarting"
+    | "error"
+) => void;
 
-function emitError(msg: string) {
-  errorListeners.forEach((cb) => cb(msg));
+const serverReadyListeners = new Set<Listener>();
+const errorListeners = new Set<ErrorListener>();
+const statusListeners = new Set<StatusListener>();
+
+function emitError(message: string) {
+  errorListeners.forEach((cb) => cb(message));
 }
 
-function emitStatus(status: StatusListener) {
+function emitStatus(
+  status:
+    | "mounting"
+    | "installing"
+    | "starting"
+    | "ready"
+    | "restarting"
+    | "error"
+) {
   statusListeners.forEach((cb) => cb(status));
 }
 
@@ -32,53 +43,36 @@ export function onPreviewError(cb: ErrorListener) {
   return () => errorListeners.delete(cb);
 }
 
-export function onStatus(cb: (s: StatusListener) => void) {
+export function onStatus(cb: StatusListener) {
   statusListeners.add(cb);
   return () => statusListeners.delete(cb);
 }
 
-export async function updateFiles() {}
-
-export async function runPreview(
-  files: ProjectFile[],
-  iframeRef: { current: HTMLIFrameElement | null }
-) {
-  try {
-    emitStatus("starting");
-
-    if (!files || files.length === 0) {
-      emitError("No files generated");
-      emitStatus("error");
-      return;
-    }
-
-    const htmlFile =
-      files.find((f) => f.path === "index.html") ||
-      files.find((f) => f.path.endsWith(".html"));
-
-    if (!htmlFile) {
-      emitError("index.html not found");
-      emitStatus("error");
-      return;
-    }
-
-    const blob = new Blob([htmlFile.content], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-
-    if (iframeRef.current) {
-      iframeRef.current.src = url;
-    }
-
-    serverReadyListeners.forEach((cb) => cb(url));
-    emitStatus("ready");
-  } catch (e) {
-    emitError("Preview failed");
-    emitStatus("error");
-  }
+export async function updateFiles(
+  _files: { path: string; content: string }[]
+): Promise<void> {
+  return;
 }
 
-export function killDevServer() {}
+export async function runPreview(
+  files?: ProjectFile[],
+  iframeRef?: { current: HTMLIFrameElement | null },
+  options?: { runBuildBeforeDev?: boolean }
+): Promise<void> {
+  emitStatus("starting");
 
-export function isDevServerRunning() {
+  if (iframeRef?.current) {
+    iframeRef.current.src = "about:blank";
+  }
+
+  setTimeout(() => {
+    emitError("Preview unavailable in Vercel environment");
+    emitStatus("error");
+  }, 500);
+}
+
+export function killDevServer(..._args: any[]): void {}
+
+export function isDevServerRunning(): boolean {
   return false;
 }
