@@ -1,113 +1,84 @@
-// previewManager.ts
+import type { ProjectFile } from "../types";
 
-type PreviewStatus =
-  | "idle"
+type Listener = (url: string) => void;
+type ErrorListener = (message: string) => void;
+type StatusListener =
   | "mounting"
   | "installing"
   | "starting"
   | "ready"
+  | "restarting"
   | "error";
 
-let currentStatus: PreviewStatus = "idle";
-let serverUrl: string | null = null;
+const serverReadyListeners = new Set<(url: string) => void>();
+const errorListeners = new Set<(msg: string) => void>();
+const statusListeners = new Set<(s: StatusListener) => void>();
 
-const statusListeners: ((status: PreviewStatus) => void)[] = [];
-const errorListeners: ((error: string) => void)[] = [];
-const serverReadyListeners: ((url: string) => void)[] = [];
+function emitError(msg: string) {
+  errorListeners.forEach((cb) => cb(msg));
+}
 
-function emitStatus(status: PreviewStatus) {
-  currentStatus = status;
+function emitStatus(status: StatusListener) {
   statusListeners.forEach((cb) => cb(status));
 }
 
-function emitError(error: string) {
-  errorListeners.forEach((cb) => cb(error));
+export function onServerReady(cb: Listener) {
+  serverReadyListeners.add(cb);
+  return () => serverReadyListeners.delete(cb);
 }
 
-function emitServerReady(url: string) {
-  serverUrl = url;
-  serverReadyListeners.forEach((cb) => cb(url));
+export function onPreviewError(cb: ErrorListener) {
+  errorListeners.add(cb);
+  return () => errorListeners.delete(cb);
 }
 
-export function onStatus(cb: (status: PreviewStatus) => void) {
-  statusListeners.push(cb);
+export function onStatus(cb: (s: StatusListener) => void) {
+  statusListeners.add(cb);
+  return () => statusListeners.delete(cb);
 }
 
-export function onPreviewError(cb: (error: string) => void) {
-  errorListeners.push(cb);
-}
+export async function updateFiles() {}
 
-export function onServerReady(cb: (url: string) => void) {
-  serverReadyListeners.push(cb);
-}
-
-export function getStatus() {
-  return currentStatus;
-}
-
-export function getServerUrl() {
-  return serverUrl;
-}
-
-export function isDevServerRunning(): boolean {
-  return serverUrl !== null;
-}
-
-let files: Record<string, string> = {};
-
-export async function updateFile(path: string, content: string) {
-  files[path] = content;
-}
-
-export async function updateFiles(newFiles: Record<string, string>) {
-  files = { ...files, ...newFiles };
-}
-
-export async function runPreview() {
+export async function runPreview(
+  files: ProjectFile[],
+  iframeRef: { current: HTMLIFrameElement | null }
+) {
   try {
-    emitStatus("mounting");
-
-    await new Promise((r) => setTimeout(r, 500));
-
-    emitStatus("installing");
-
-    await new Promise((r) => setTimeout(r, 1000));
-
     emitStatus("starting");
 
-    await new Promise((r) => setTimeout(r, 1000));
+    if (!files || files.length === 0) {
+      emitError("No files generated");
+      emitStatus("error");
+      return;
+    }
 
-    const url = "http://localhost:5173";
+    const htmlFile =
+      files.find((f) => f.path === "index.html") ||
+      files.find((f) => f.path.endsWith(".html"));
 
-    emitServerReady(url);
+    if (!htmlFile) {
+      emitError("index.html not found");
+      emitStatus("error");
+      return;
+    }
 
+    const blob = new Blob([htmlFile.content], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+
+    if (iframeRef.current) {
+      iframeRef.current.src = url;
+    }
+
+    serverReadyListeners.forEach((cb) => cb(url));
     emitStatus("ready");
-
-    return { success: true, url };
-  } catch (err: any) {
+  } catch (e) {
+    emitError("Preview failed");
     emitStatus("error");
-    emitError(err?.message || "Preview failed");
-    return { success: false, error: err?.message };
   }
 }
 
-export async function runBuild() {
-  try {
-    await new Promise((r) => setTimeout(r, 1000));
+export function killDevServer() {}
 
-    return {
-      success: true,
-      output: "Build completed successfully",
-    };
-  } catch (err: any) {
-    return {
-      success: false,
-      error: err?.message || "Build failed",
-    };
-  }
-}
-
-export function stopPreview() {
-  serverUrl = null;
-  emitStatus("idle");
+export function isDevServerRunning() {
+  return false;
 }

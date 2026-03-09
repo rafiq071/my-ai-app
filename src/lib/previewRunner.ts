@@ -1,14 +1,6 @@
 /**
- * Preview manager re-exports.
+ * previewRunner placeholder
+ * Preview disabled for production build
  */
-export {
-  runPreview,
-  updateFile,
-  updateFiles,
-  runBuild,
-  killDevServer,
-  isDevServerRunning,
-  onServerReady,
-  onPreviewError,
-  onStatus,
-} from "./previewManager";
+
+export {};
