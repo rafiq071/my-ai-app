@@ -2,33 +2,24 @@ import type { ProjectFile } from "../types";
 
 type Listener = (url: string) => void;
 type ErrorListener = (message: string) => void;
-
 type StatusListener = (
-  status:
-    | "mounting"
-    | "installing"
-    | "starting"
-    | "ready"
-    | "restarting"
-    | "error"
+  status: "mounting" | "installing" | "starting" | "ready" | "restarting" | "error"
 ) => void;
 
 const serverReadyListeners = new Set<Listener>();
 const errorListeners = new Set<ErrorListener>();
 const statusListeners = new Set<StatusListener>();
 
+function emitServerReady(url: string) {
+  serverReadyListeners.forEach((cb) => cb(url));
+}
+
 function emitError(message: string) {
   errorListeners.forEach((cb) => cb(message));
 }
 
 function emitStatus(
-  status:
-    | "mounting"
-    | "installing"
-    | "starting"
-    | "ready"
-    | "restarting"
-    | "error"
+  status: "mounting" | "installing" | "starting" | "ready" | "restarting" | "error"
 ) {
   statusListeners.forEach((cb) => cb(status));
 }
@@ -49,30 +40,55 @@ export function onStatus(cb: StatusListener) {
 }
 
 export async function updateFiles(
-  _files: { path: string; content: string }[]
+  files: { path: string; content: string }[]
 ): Promise<void> {
+  // currently not needed but required for interface
   return;
 }
 
 export async function runPreview(
-  files?: ProjectFile[],
-  iframeRef?: { current: HTMLIFrameElement | null },
+  files: ProjectFile[],
+  iframeRef: { current: HTMLIFrameElement | null },
   options?: { runBuildBeforeDev?: boolean }
 ): Promise<void> {
+
   emitStatus("starting");
 
-  if (iframeRef?.current) {
-    iframeRef.current.src = "about:blank";
-  }
+  try {
 
-  setTimeout(() => {
-    emitError("Preview unavailable in Vercel environment");
+    if (!iframeRef.current) {
+      emitError("Preview iframe not found");
+      return;
+    }
+
+    // find index.html
+    const indexFile = files.find((f) => f.path.endsWith("index.html"));
+
+    if (!indexFile) {
+      emitError("index.html not found in generated files");
+      emitStatus("error");
+      return;
+    }
+
+    // render preview
+    iframeRef.current.srcdoc = indexFile.content;
+
+    emitServerReady("preview");
+    emitStatus("ready");
+
+  } catch (err) {
+
+    console.error(err);
+    emitError("Preview failed to render");
     emitStatus("error");
-  }, 500);
+
+  }
 }
 
-export function killDevServer(..._args: any[]): void {}
+export function killDevServer(): void {
+  return;
+}
 
 export function isDevServerRunning(): boolean {
-  return false;
+  return true;
 }
