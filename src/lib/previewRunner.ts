@@ -1,6 +1,5 @@
 /**
- * Global WebContainer preview manager (Lovable/Bolt style).
- * Re-exports from previewManager so the manager lives under previewRunner.ts entry.
+ * Preview manager re-exports.
  */
 export {
   runPreview,

@@ -489,7 +489,7 @@ export default function App() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1.5rem" }}>
                 {[
                   { icon: "⚡", title: "AI generation", desc: "Describe your app in plain English. Get production-ready React + TypeScript code in seconds." },
-                  { icon: "🖥️", title: "Live preview", desc: "Run Vite in the browser with WebContainer. See changes instantly without leaving the tab." },
+                  { icon: "🖥️", title: "Live preview", desc: "Run Vite in the browser. See changes instantly without leaving the tab." },
                   { icon: "📁", title: "Projects & files", desc: "Organize work in projects. Edit files, save to the cloud, and iterate with confidence." },
                 ].map((f) => (
                   <div key={f.title} style={{ padding: "2rem", borderRadius: "16px", background: "#fff", border: "1px solid #f1f5f9", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", transition: "border-color 0.2s, box-shadow 0.2s, transform 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.08)"; e.currentTarget.style.transform = "translateY(-2px)"; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#f1f5f9"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)"; e.currentTarget.style.transform = "none"; }}>
