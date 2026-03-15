@@ -210,6 +210,7 @@ export async function POST(request: NextRequest) {
         systemPrompt: SYSTEM_PROMPT,
         temperature: TEMPERATURE,
         maxTokens: Math.min(MAX_OUTPUT_TOKENS, selectedModel.maxTokens),
+        responseFormat: 'json_object',
       })
       return new Response(
         new ReadableStream({
@@ -245,6 +246,7 @@ export async function POST(request: NextRequest) {
         systemPrompt: SYSTEM_PROMPT,
         temperature: TEMPERATURE,
         maxTokens: Math.min(MAX_OUTPUT_TOKENS, model.maxTokens),
+        responseFormat: 'json_object',
       })
 
       const parseResult = parseAIResponse(result.content)

@@ -20,6 +20,8 @@ export interface GenerationOptions {
   systemPrompt?: string
   maxTokens?: number
   temperature?: number
+  /** Force OpenAI to return valid JSON (fewer parse errors). */
+  responseFormat?: 'json_object'
 }
 
 // OpenAI Client
@@ -40,6 +42,7 @@ export async function* createOpenAICompletionStream(options: GenerationOptions):
     temperature: options.temperature ?? 0.7,
     max_tokens: options.maxTokens ?? 4000,
     stream: true,
+    ...(options.responseFormat === 'json_object' && { response_format: { type: 'json_object' as const } }),
   })
   for await (const chunk of stream) {
     const content = chunk.choices?.[0]?.delta?.content
@@ -65,6 +68,7 @@ async function generateWithOpenAI(options: GenerationOptions): Promise<Generatio
     ],
     temperature: options.temperature || 0.7,
     max_tokens: options.maxTokens || 4000,
+    ...(options.responseFormat === 'json_object' && { response_format: { type: 'json_object' as const } }),
   })
 
   const content = response.choices[0]?.message?.content || ''

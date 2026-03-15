@@ -328,9 +328,62 @@ function extractBalancedJson(str: string): string | null {
   return null;
 }
 
-/** Repair common JSON mistakes from LLM output (e.g. trailing commas). */
+/** Repair common JSON mistakes from LLM output (trailing commas, BOM, truncation). */
 function repairJson(s: string): string {
-  return s.replace(/,(\s*[}\]])/g, "$1").replace(/\r\n/g, "\n").trim();
+  let out = s
+    .replace(/^\uFEFF/, "")
+    .replace(/\r\n/g, "\n")
+    .trim();
+  out = out.replace(/,(\s*[}\]])/g, "$1");
+  return out.trim();
+}
+
+/** Try to fix truncated JSON by appending missing closing brackets. */
+function tryCloseJson(s: string): string {
+  const trimmed = s.trim();
+  if (!trimmed.startsWith("{")) return s;
+  let depth = 0;
+  let arrayDepth = 0;
+  let i = 0;
+  const len = trimmed.length;
+  let inString = false;
+  let escape = false;
+  let quote = "";
+  while (i < len) {
+    const c = trimmed[i];
+    if (escape) {
+      escape = false;
+      i++;
+      continue;
+    }
+    if (inString) {
+      if (c === "\\") escape = true;
+      else if (c === quote) inString = false;
+      i++;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      inString = true;
+      quote = c;
+      i++;
+      continue;
+    }
+    if (c === "{") depth++;
+    else if (c === "}") depth--;
+    else if (c === "[") arrayDepth++;
+    else if (c === "]") arrayDepth--;
+    i++;
+  }
+  let suffix = "";
+  while (arrayDepth > 0) {
+    suffix += "]";
+    arrayDepth--;
+  }
+  while (depth > 0) {
+    suffix += "}";
+    depth--;
+  }
+  return trimmed + suffix;
 }
 
 /** Safety parser: strip code fences, trim, extract JSON, repair, then parse. */
@@ -350,12 +403,10 @@ function parseJsonFromAI(raw: string): { ok: boolean; parsed?: any } {
   ].filter(Boolean) as string[];
   const toTry = candidates.map((s) => String(s).trim()).filter((s) => s.startsWith("{"));
   for (const trimmed of toTry) {
-    try {
-      return { ok: true, parsed: JSON.parse(trimmed) };
-    } catch {
+    for (const candidate of [trimmed, repairJson(trimmed), tryCloseJson(trimmed), tryCloseJson(repairJson(trimmed))]) {
       try {
-        const repaired = repairJson(trimmed);
-        if (repaired !== trimmed) return { ok: true, parsed: JSON.parse(repaired) };
+        const parsed = JSON.parse(candidate);
+        return { ok: true, parsed };
       } catch {
         //
       }
@@ -363,11 +414,9 @@ function parseJsonFromAI(raw: string): { ok: boolean; parsed?: any } {
   }
   const fallback = extractBalancedJson(cleaned) || extractBalancedJson(text);
   if (fallback) {
-    try {
-      return { ok: true, parsed: JSON.parse(fallback) };
-    } catch {
+    for (const candidate of [fallback, repairJson(fallback), tryCloseJson(fallback), tryCloseJson(repairJson(fallback))]) {
       try {
-        return { ok: true, parsed: JSON.parse(repairJson(fallback)) };
+        return { ok: true, parsed: JSON.parse(candidate) };
       } catch {
         //
       }
@@ -603,6 +652,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ],
       temperature: 0.7,
       max_tokens: 16000,
+      response_format: { type: "json_object" },
     });
 
     let raw = completion.choices[0]?.message?.content ?? "";
@@ -620,6 +670,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ],
         temperature: 0.3,
         max_tokens: 16000,
+        response_format: { type: "json_object" },
       });
       raw = retryCompletion.choices[0]?.message?.content ?? "";
       parseResult = parseJsonFromAI(raw);

@@ -10,9 +10,61 @@ export type ParseResult =
   | { ok: true; data: unknown }
   | { ok: false; error: string; raw?: string }
 
-/** Repair common JSON mistakes from LLM output (e.g. trailing commas). */
+/** Repair common JSON mistakes from LLM output (trailing commas, BOM). */
 function repairJson(s: string): string {
-  return s.replace(/,(\s*[}\]])/g, '$1').replace(/\r\n/g, '\n').trim()
+  return s
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/,(\s*[}\]])/g, '$1')
+    .trim()
+}
+
+/** Try to fix truncated JSON by appending missing closing brackets. */
+function tryCloseJson(s: string): string {
+  const trimmed = s.trim()
+  if (!trimmed.startsWith('{')) return s
+  let depth = 0
+  let arrayDepth = 0
+  let i = 0
+  const len = trimmed.length
+  let inString = false
+  let escape = false
+  let quote = ''
+  while (i < len) {
+    const c = trimmed[i]
+    if (escape) {
+      escape = false
+      i++
+      continue
+    }
+    if (inString) {
+      if (c === '\\') escape = true
+      else if (c === quote) inString = false
+      i++
+      continue
+    }
+    if (c === '"' || c === "'") {
+      inString = true
+      quote = c
+      i++
+      continue
+    }
+    if (c === '{') depth++
+    else if (c === '}') depth--
+    else if (c === '[') arrayDepth++
+    else if (c === ']') arrayDepth--
+    i++
+  }
+  let suffix = ''
+  while (arrayDepth > 0) {
+    suffix += ']'
+    arrayDepth--
+  }
+  while (depth > 0) {
+    suffix += '}'
+    depth--
+  }
+  return trimmed + suffix
 }
 
 /** Extract JSON from text using multiple strategies (object or array). */
@@ -45,13 +97,15 @@ export function parseAIResponse(responseText: string): ParseResult {
   const raw = typeof responseText === 'string' ? responseText : String(responseText ?? '')
   console.log('AI raw response:', raw.slice(0, 2000) + (raw.length > 2000 ? '...' : ''))
 
-  // Try direct parse first, then repaired raw
-  try {
-    const data = JSON.parse(raw)
-    return { ok: true, data }
-  } catch {
+  const toParse = [
+    raw,
+    repairJson(raw),
+    tryCloseJson(raw),
+    tryCloseJson(repairJson(raw)),
+  ]
+  for (const s of toParse) {
     try {
-      const data = JSON.parse(repairJson(raw))
+      const data = JSON.parse(s)
       return { ok: true, data }
     } catch {
       // continue
@@ -60,18 +114,12 @@ export function parseAIResponse(responseText: string): ParseResult {
 
   const candidates = extractJsonCandidates(raw)
   for (const candidate of candidates) {
-    try {
-      const data = JSON.parse(candidate)
-      return { ok: true, data }
-    } catch {
+    for (const s of [candidate, repairJson(candidate), tryCloseJson(candidate), tryCloseJson(repairJson(candidate))]) {
       try {
-        const repaired = repairJson(candidate)
-        if (repaired !== candidate) {
-          const data = JSON.parse(repaired)
-          return { ok: true, data }
-        }
+        const data = JSON.parse(s)
+        return { ok: true, data }
       } catch {
-        // try next candidate
+        // try next
       }
     }
   }
