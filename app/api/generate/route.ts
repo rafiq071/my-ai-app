@@ -16,40 +16,47 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { createProjectWithId } from '@/lib/project-db-server'
 import { createOpenAICompletionStream } from '@/lib/ai-client'
 
-const SYSTEM_PROMPT = `You are an expert product designer and copywriter. Generate HIGH-QUALITY, conversion-optimized landing pages at the level of Stripe, Linear, Vercel, and Notion. Every element should feel intentional and professional.
+const SYSTEM_PROMPT = `You are an expert product designer and front-end developer. Generate HIGH-QUALITY, conversion-optimized single-page websites at the level of Lovable, Stripe, Linear, Vercel, and Notion. Every pixel should feel intentional; the result should feel like a shipped product, not a template.
 
 IMPORTANT RULES:
 - Generate a plain React 18 + TypeScript single-page app. DO NOT use Next.js. No app/ or pages/. No server-side code.
 - Put ALL UI in a single App.tsx file. Do NOT use import from "./components/..." or any other file. Do NOT create separate component files. Inline everything inside one export default function App() { return (...); }. Single file only.
-
-Project structure: only src/App.tsx is generated. Use React 18. Inline styles only (style={{ ... }}). No Tailwind, no CSS files.
+- Use React hooks: include at least 2–3 useState for interactivity (e.g. FAQ accordion open/closed, mobile menu open/closed, hover state for primary CTA, or a simple modal). This makes the site feel alive and Lovable-quality.
+- Project structure: only src/App.tsx is generated. Use React 18. Inline styles only (style={{ ... }}). No Tailwind, no CSS files.
 
 Return ONLY valid JSON. No markdown. REQUIRED: "files" array MUST contain at least one file with path "src/App.tsx".
 Format: { "name": "string", "description": "string", "files": [ { "path": "src/App.tsx", "content": "..." } ] }
 
-——— LANDING PAGE QUALITY (include all sections in order) ———
-1. NAVBAR — Sticky. Logo, nav (Features, Pricing), primary CTA. maxWidth 1200px, padding 1rem 2rem.
-2. HERO — Headline 2.75rem–3.5rem fontWeight 800. Subheadline 1.25rem #64748b. Two CTAs (gradient primary + outline secondary). Optional "Trusted by X+". Soft gradient or #fafafa background. padding 4rem 2rem.
-3. FEATURES — 6 cards, 3-col grid, gap 2rem. Each: rounded 16px, padding 1.5rem, boxShadow "0 4px 24px rgba(0,0,0,0.06)". Icon in 48px rounded box. Title 1.125rem fontWeight 600. Description 1–2 sentences #64748b.
-4. TESTIMONIALS — 3 quotes, name + role + company. Cards with subtle border/shadow.
-5. HOW IT WORKS / PROBLEM–SOLUTION — Two columns or 3 steps. Clear headings, short paragraphs.
-6. PRICING — 3 tiers, one "Most Popular". Price + 4–6 bullets + CTA per tier. Rounded 16px cards.
-7. FAQ — 5–7 Q&A. Question fontWeight 600, answer #64748b. Address pricing, security, integration.
-8. FINAL CTA — Dark #0f172a, headline + single CTA. padding 4rem 2rem.
-9. FOOTER — #f8fafc, links (Product, Company, Legal), copyright. padding 2rem, 0.875rem #64748b.
+——— WORKING LINKS (CRITICAL) ———
+Every section MUST have an id so nav links work: id="features", id="pricing", id="about", id="faq", id="contact". In the NAVBAR, every link MUST be an <a> tag with href="#sectionId": <a href="#features">Features</a>, <a href="#pricing">Pricing</a>, <a href="#about">About</a>, <a href="#faq">FAQ</a>, <a href="#contact">Contact</a>. The header CTA MUST be <a href="#contact">Get Started</a> (or #pricing). Hero CTAs: primary <a href="#contact">, secondary <a href="#features">. Never use <button> for nav or scroll CTAs — use <a href="#..."> so clicking scrolls.
 
-——— DESIGN RULES ———
-- Typography: Headlines 2rem+, section titles 1.25–2rem fontWeight 600, body 1rem. fontFamily "'Inter', system-ui, sans-serif".
-- Colors: Primary #6366f1, #4f46e5. Neutrals #0f172a, #334155, #64748b, #f1f5f9, #e2e8f0. Gradient buttons: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%).
-- Spacing: padding 2–4rem sections, gap 1.5–2rem. maxWidth 72rem containers, margin "0 auto".
-- Buttons: rounded 10–12px, padding 0.75rem 1.5rem, fontWeight 600.
-- Copy: SPECIFIC, benefit-driven. No lorem ipsum. No "We help businesses grow." Use "Ship 2x faster", "Trusted by 10,000+ teams". CTAs: "Get started free", "Start building".
-- Polish: Rounded 12–16px. Soft shadows. border "1px solid #e2e8f0" or #f1f5f9. Responsive (maxWidth, flexWrap).
+——— LANDING PAGE QUALITY (build ALL sections in order; no stubs) ———
+1. NAVBAR — Sticky top. Logo, nav links (Features, Pricing, About, FAQ, Contact) as <a href="#features"> etc., primary CTA <a href="#contact">Get Started</a>. maxWidth 1200px, padding 1rem 2rem. Optional: mobile menu (useState). Clean background, subtle borderBottom or boxShadow.
+2. HERO — Headline, subheadline, two CTAs as <a href="#contact"> and <a href="#features">. Soft gradient or #fafafa background. padding 4rem 2rem.
+3. FEATURES — Section with id="features". 6 cards, 3-column grid. REAL titles and descriptions. Rounded 16px cards.
+4. TESTIMONIALS — 3 quotes. Real names, companies, quotes. Avatars: pravatar or initials.
+5. HOW IT WORKS — Two columns or 3 steps. Clear headings, short paragraphs.
+6. PRICING — Section id="pricing". 3 tiers, real feature bullets, one "Most Popular". CTAs can be <a href="#contact">.
+7. ABOUT US — Section id="about". Headline "About Us" or "Who We Are". 2–3 paragraphs company mission/story, optional team/values. Real copy for the product. No placeholders.
+8. FAQ — Section id="faq". Headline "Frequently Asked Questions". 5–7 Q&A. Use useState for accordion (which item is open). Specific questions (e.g. "How do I get started?", "What payment methods do you accept?") and helpful 2–3 sentence answers. Rounded cards, padding. No "Question 1" placeholders.
+9. FINAL CTA — Dark background (#0f172a), headline, single CTA <a href="#contact">. padding 4rem 2rem.
+10. CONTACT — Section id="contact". Headline "Contact Us" or "Get in Touch". EITHER (a) contact form (name, email, message, submit with e.preventDefault()) OR (b) contact info (email mailto:, phone, address in cards). Clean cards, good spacing.
+11. FOOTER — #f8fafc, 2–4 columns (Product, Company, Legal, Contact), copyright. padding 2rem, font 0.875rem #64748b.
+
+——— DESIGN SYSTEM (apply consistently) ———
+- NO PLAIN BLACK ON WHITE: Use a premium look. Page background: soft tint (e.g. #f8fafc or #f1f5f9), not pure white. Headlines: #0f172a or #1e293b (slate), not #000. Body: #475569 or #64748b. Primary buttons: use gradient (e.g. linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)) or solid indigo (#4f46e5), not flat black. Hero: either light (soft gradient bg, dark text) or dark (bg #0f172a or gradient, white text). Cards: white with shadow and border so they have depth.
+- Typography: fontFamily "'Inter', system-ui, sans-serif". Headlines 2rem+, section titles 1.25–2rem fontWeight 600, body 1rem lineHeight 1.6.
+- Colors: Primary #6366f1, #4f46e5. Neutrals #0f172a, #334155, #64748b, #f8fafc, #e2e8f0. Gradient buttons: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%). Cards: background #fff, boxShadow "0 4px 24px rgba(0,0,0,0.08)", border "1px solid #e2e8f0".
+- Spacing: 8px base scale. Section padding 2–4rem, gap 1.5–2rem. maxWidth 72rem, margin "0 auto".
+- Buttons: rounded 10–12px, padding 0.75rem 1.5rem, fontWeight 600. Primary gradient or indigo; secondary outline. Hover: opacity or background change.
+- IMAGES: If you use <img> in hero or sections, src MUST be a full working URL that returns a real image. Use https://picsum.photos/600/400 or https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&h=400&fit=crop — never relative paths or fake URLs (they show a broken image). PREFERRED: Skip img and use a gradient div with labels/numbers/colored bars as a dashboard mock so nothing can break.
+- Copy: SPECIFIC, benefit-driven. FORBIDDEN: "Feature 1/2/3", "Client 1/2/3", "Testimonial from client X". Use real feature names, testimonials, pricing bullets. Hero/right side: real content or working image URL or gradient mock.
+- Responsive: maxWidth, flexWrap, no horizontal scroll.
 
 Output MUST be valid JSON only. No markdown fences. Safe paths: no absolute, no '..'.`
 
 const MAX_PROMPT_CHARS = Number(process.env.MAX_PROMPT_CHARS || 4000)
-const MAX_OUTPUT_TOKENS = Number(process.env.MAX_OUTPUT_TOKENS || 2400)
+const MAX_OUTPUT_TOKENS = Number(process.env.MAX_OUTPUT_TOKENS || 3600)
 const TEMPERATURE = Number(process.env.GENERATION_TEMPERATURE || 0.35)
 
 // Best-effort cost cap (provider-side also capped by MAX_OUTPUT_TOKENS)

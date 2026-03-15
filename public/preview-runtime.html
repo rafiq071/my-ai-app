@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { primary: "#0f172a" } } }
+    }
+  </script>
+  <link rel="stylesheet" href="/preview-files/index.css" />
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script>
+    (function() {
+      var React = window.React;
+      if (React) {
+        window.useState = React.useState;
+        window.useEffect = React.useEffect;
+        window.useRef = React.useRef;
+        window.useMemo = React.useMemo;
+        window.useCallback = React.useCallback;
+        window.useReducer = React.useReducer;
+        window.useContext = React.useContext;
+      }
+      window.Menu = function(props) {
+        return React.createElement("svg", Object.assign({}, props, { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2" }), [
+          React.createElement("line", { x1: "3", y1: "6", x2: "21", y2: "6", key: "1" }),
+          React.createElement("line", { x1: "3", y1: "12", x2: "21", y2: "12", key: "2" }),
+          React.createElement("line", { x1: "3", y1: "18", x2: "21", y2: "18", key: "3" })
+        ]);
+      };
+      window.Check = function(props) {
+        return React.createElement("svg", Object.assign({}, props, { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2" }), [
+          React.createElement("polyline", { points: "20 6 9 17 4 12", key: "1" })
+        ]);
+      };
+      var Icon = function(props) {
+        var className = (props && props.className) || "w-5 h-5";
+        return React.createElement("svg", { className: className, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2" }, React.createElement("circle", { cx: "12", cy: "12", r: "10" }));
+      };
+      var iconNames = ["X", "ArrowRight", "ArrowLeft", "Plus", "Minus", "Star", "Search", "User", "Settings", "Home", "Mail", "Phone", "ChevronRight", "ChevronLeft", "ChevronDown", "ChevronUp", "ExternalLink", "Zap", "Shield", "Heart", "MessageCircle", "Calendar", "FileText", "Image", "Download", "Upload", "Trash2", "Edit", "Copy", "Share2"];
+      iconNames.forEach(function(name) { window[name] = Icon; });
+    })();
+  </script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    (function() {
+      var rootEl = document.getElementById("root");
+
+      function render(files) {
+        if (!files || !Array.isArray(files) || files.length === 0) {
+          rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#64748b;text-align:center\">Send files from the editor and click Run to preview.</div>";
+          return;
+        }
+        var appFile = files.find(function(f) {
+          return (f.path === "src/App.tsx" || f.path === "src/App.jsx" || f.path === "App.tsx" || f.path === "App.jsx" || (f.path && (f.path.endsWith("App.tsx") || f.path.endsWith("App.jsx") || f.path.endsWith("App.js")))) && f.content;
+        });
+        if (!appFile || !appFile.content) {
+          rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#64748b\">No App component found.</div>";
+          return;
+        }
+        var appCode = (appFile.content || "").trim();
+        appCode = appCode.replace(/import\s+React.*?;/g, "");
+        appCode = appCode.replace(/import\s+.*?from\s+['"].*?['"];?/g, "");
+        appCode = appCode.replace(/import\s+[\s\S]*?from\s+['"][^'"]*['"]\s*;?/g, "");
+        appCode = appCode.replace(/import\s+type\s+[\s\S]*?;?\s*$/gm, "");
+        var Icon = function(props) {
+          var className = (props && props.className) || "w-5 h-5";
+          return React.createElement("svg", { className: className, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2" }, React.createElement("circle", { cx: "12", cy: "12", r: "10" }));
+        };
+        var iconNames = ["Menu", "Check", "X", "ArrowRight", "ArrowLeft", "Plus", "Minus", "Star", "Search", "User", "Settings", "Home", "Mail", "Phone", "ChevronRight", "ChevronLeft", "ChevronDown", "ChevronUp", "ExternalLink", "Zap", "Shield", "Heart", "MessageCircle", "Calendar", "FileText", "Image", "Download", "Upload", "Trash2", "Edit", "Copy", "Share2"];
+        iconNames.forEach(function(name) { if (typeof window[name] === "undefined") window[name] = Icon; });
+        try {
+          var compiled = Babel.transform(appCode, {
+            presets: [["react"], ["typescript", { onlyRemoveTypeImports: true }]],
+            filename: "App.tsx"
+          }).code;
+          compiled = compiled.replace(/\bexport\s+default\s+/g, "var __previewDefault = ");
+          compiled = compiled.replace(/\bexport\s+function\s+/g, "function ");
+          compiled = compiled.replace(/\bexport\s+const\s+/g, "const ");
+          compiled = compiled.replace(/\bexport\s+var\s+/g, "var ");
+          compiled = compiled.replace(/\bexport\s+class\s+/g, "class ");
+          compiled = compiled.replace(/export\s*\{[^}]*\}\s*;?/g, "");
+          var globals = "const { useState, useEffect, useRef, useMemo, useCallback, createElement } = React; "
+            + "var Link = function Link(props) { var p = props || {}; var href = p.href || '#'; var rest = {}; for (var k in p) { if (k !== 'href' && k !== 'to') rest[k] = p[k]; } if (p.to && !href) href = p.to; return createElement('a', Object.assign({ href: href }, rest), p.children); }; ";
+          var fn = new Function("React", "ReactDOM", "return (function(){ " + globals + compiled + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null); })()");
+          var App = fn(window.React, window.ReactDOM);
+          if (App && typeof App === "function") {
+            if (!window.__app_root__) {
+              window.__app_root__ = ReactDOM.createRoot(document.getElementById("root"));
+            }
+            window.__app_root__.render(React.createElement(App));
+          } else {
+            rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626\">Preview: no default export.</div>";
+          }
+        } catch (err) {
+          rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626\">Preview error: " + (err.message || String(err)).replace(/</g, "&lt;") + "</div>";
+        }
+      }
+
+      async function loadPreview() {
+        try {
+          var res = await fetch("/api/preview-sandbox");
+          var data = await res.json();
+          if (!data.files || !data.files.length) {
+            rootEl.innerHTML = "<div style=\"font-family:sans-serif;padding:40px\">No preview yet.</div>";
+            return;
+          }
+          render(data.files);
+        } catch (e) {
+          rootEl.innerHTML = "<div style=\"font-family:sans-serif;padding:40px\">No preview yet.</div>";
+        }
+      }
+
+      window.addEventListener("message", function(event) {
+        if (event.data && event.data.type === "preview-files") {
+          var files = event.data.files;
+          if (files) render(files);
+        }
+      });
+
+      loadPreview();
+    })();
+  </script>
+</body>
+</html>

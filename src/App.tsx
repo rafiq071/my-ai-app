@@ -2,15 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "./lib/supabase";
 import { Session } from "@supabase/supabase-js";
 import type { ProjectFile, Project } from "./types";
-import {
-  runPreview as runPreviewManager,
-  updateFiles as updatePreviewFiles,
-  killDevServer,
-  onServerReady,
-  onPreviewError,
-  onStatus,
-  isDevServerRunning,
-} from "./lib/previewManager";
+import PreviewFrame from "./preview/PreviewFrame";
+import { sendPreview } from "./lib/sendPreview";
 
 const CONFIG_PATHS = ["vite.config.ts", "tsconfig.json", "package.json"];
 
@@ -47,13 +40,9 @@ export default function App() {
   const [modifyInstruction, setModifyInstruction] = useState("");
   const [modifyLoading, setModifyLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [previewBuilding, setPreviewBuilding] = useState(false);
-  const [previewError, setPreviewError] = useState<string | null>(null);
-  const [previewStatus, setPreviewStatus] = useState<"mounting" | "installing" | "starting" | "ready" | "restarting" | "error" | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const hasStartedRef = useRef(false);
   const [navScrolled, setNavScrolled] = useState(false);
+  const [previewKey, setPreviewKey] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const fileCount = projectFiles.length;
   const hasUnsaved = editorDirty;
@@ -63,24 +52,64 @@ export default function App() {
     (import.meta.env.VITE_SUPABASE_URL.includes("your-project") ||
       import.meta.env.VITE_SUPABASE_ANON_KEY === "your-anon-key");
 
-  useEffect(() => {
-    const unsubReady = onServerReady((url) => {
-      setPreviewUrl(url);
-      if (iframeRef.current) iframeRef.current.src = url;
-    });
-    const unsubError = onPreviewError((msg) => setPreviewError(msg || null));
-    const unsubStatus = onStatus((status) => {
-      setPreviewStatus(status);
-      setPreviewBuilding(status === "mounting" || status === "installing" || status === "starting" || status === "restarting");
-      if (status === "ready") setPreviewError(null);
-      if (status === "mounting" || status === "error") setPreviewUrl(null);
-    });
-    return () => {
-      unsubReady();
-      unsubError();
-      unsubStatus();
+  function consolidateForPreview(files: Array<{ path: string; content: string }>): Array<{ path: string; content: string }> {
+    const list = files.filter((f) => f?.path && typeof f.content === "string");
+    const appFile = list.find((f) => f.path === "src/App.tsx" || f.path === "App.tsx");
+    if (!appFile) return list;
+    const componentFiles = list.filter((f) => f.path.startsWith("src/components/") && (f.path.endsWith(".tsx") || f.path.endsWith(".jsx")));
+    if (componentFiles.length === 0) return list;
+    const stripImportsAndExport = (code: string): string => {
+      return code
+        .replace(/import\s+[\s\S]*?from\s+['"][^'"]*['"]\s*;?/g, "")
+        .replace(/export\s+default\s+/, "")
+        .trim();
     };
-  }, []);
+    const parts: string[] = ['import React from "react";', 'import { useState, useEffect, useRef } from "react";'];
+    for (const f of componentFiles) parts.push(stripImportsAndExport(String(f.content)));
+    let appContent = String(appFile.content)
+      .replace(/import\s+[\s\S]*?from\s+['"]\.\.?\/components\/[^'"]*['"]\s*;?/g, "")
+      .replace(/import\s+[\s\S]*?from\s+['"]react['"]\s*;?/gi, "")
+      .replace(/import\s+[\s\S]*?from\s+['"]lucide-react['"]\s*;?/gi, "")
+      .replace(/export\s+default\s+/, "");
+    parts.push(appContent);
+    const singleContent = parts.filter(Boolean).join("\n\n");
+    const hasExport = singleContent.includes("export default");
+    const finalContent = hasExport ? singleContent : singleContent.replace(/\bfunction App\s*\(/, "export default function App(");
+    return [{ path: "src/App.tsx", content: finalContent }];
+  }
+
+  function runPreview(files: Array<{ path: string; content: string }>) {
+    const list = files
+      .filter((f) => f?.path && !isConfigPath(f.path))
+      .map((f) => ({ path: f.path, content: String(f.content ?? "") }));
+    syncPreviewSandbox(list);
+  }
+
+  async function syncPreviewSandbox(files: Array<{ path: string; content: string }>) {
+    const list = consolidateForPreview(
+      files
+        .filter((f) => f?.path && !isConfigPath(f.path))
+        .map((f) => ({ path: f.path, content: String(f.content ?? "") }))
+    );
+    if (list.length === 0) return;
+    try {
+      await fetch("/api/preview-sandbox", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files: list }),
+      });
+    } catch (_) {}
+    sendPreview(list, iframeRef);
+  }
+
+  function handleRun() {
+    const filesToUse = projectFiles.map((f) =>
+      selectedFilePath && f.path === selectedFilePath && editorContent.trim()
+        ? { ...f, content: editorContent }
+        : f
+    );
+    runPreview(filesToUse.map((f) => ({ path: f.path, content: String(f.content ?? "") })));
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -104,13 +133,6 @@ export default function App() {
   }, [session]);
 
   useEffect(() => {
-    if (hasStartedRef.current) return;
-    if (projectFiles.length === 0) return;
-    hasStartedRef.current = true;
-    runPreview();
-  }, [projectFiles]);
-
-  useEffect(() => {
     if (!session) {
       setProjects([]);
       return;
@@ -129,16 +151,8 @@ export default function App() {
       setSelectedFilePath(null);
       setEditorContent("");
       setEditorDirty(false);
-      setPreviewUrl(null);
-      setPreviewError(null);
-      if (iframeRef.current) iframeRef.current.src = "about:blank";
       return;
     }
-    hasStartedRef.current = false;
-    killDevServer();
-    setPreviewUrl(null);
-    setPreviewError(null);
-    if (iframeRef.current) iframeRef.current.src = "about:blank";
     const projectId = activeProject.id;
     loadFiles(projectId).then((data) => {
       if (!data) return;
@@ -146,6 +160,10 @@ export default function App() {
       if (data.length > 0) {
         setSelectedFilePath(data[0].path);
         setEditorContent(data[0].content);
+        const list = data
+          .filter((f: ProjectFile) => f?.path && !isConfigPath(f.path))
+          .map((f: ProjectFile) => ({ path: f.path, content: String(f.content ?? "") }));
+        syncPreviewSandbox(list);
       } else {
         setSelectedFilePath(null);
         setEditorContent("");
@@ -176,12 +194,6 @@ export default function App() {
       setProjectFiles(data);
     }
     return data;
-  };
-
-  const runPreview = async (filesOverride?: ProjectFile[], options?: { runBuildBeforeDev?: boolean }) => {
-    const files = filesOverride ?? projectFiles;
-    if (!files?.length) return;
-    await runPreviewManager(files, iframeRef, options);
   };
 
   const saveCurrentFile = async () => {
@@ -232,7 +244,6 @@ export default function App() {
 
     setAiLoading(true);
     setAiError(null);
-    setPreviewError(null);
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 180000);
@@ -296,11 +307,10 @@ export default function App() {
 
       if (loaded && loaded.length > 0) {
         setProjectFiles(loaded);
-        hasStartedRef.current = false;
-        runPreview(loaded).catch((err) => {
-          console.error("Preview failed:", err);
-          setPreviewError("Preview failed");
-        });
+        const list = loaded
+          .filter((f: ProjectFile) => f?.path && !isConfigPath(f.path))
+          .map((f: ProjectFile) => ({ path: f.path, content: String(f.content ?? "") }));
+        runPreview(list);
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Request failed";
@@ -321,7 +331,6 @@ export default function App() {
 
     setModifyLoading(true);
     setAiError(null);
-    setPreviewError(null);
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 90000);
@@ -360,21 +369,13 @@ export default function App() {
       setEditorDirty(false);
       setModifyInstruction("");
       setAiError(null);
-      hasStartedRef.current = false;
-      if (isDevServerRunning()) {
-        updatePreviewFiles([{ path: "src/App.tsx", content: newContent }]).catch((err) => {
-          console.error("Preview update failed:", err);
-          setPreviewError("Preview update failed");
-        });
-      } else {
-        const nextFiles = projectFiles.map((p) =>
-          p.path === "src/App.tsx" ? { ...p, content: newContent } : p
-        );
-        runPreview(nextFiles).catch((err) => {
-          console.error("Preview failed:", err);
-          setPreviewError("Preview failed");
-        });
-      }
+      const nextFiles = projectFiles.map((p) =>
+        p.path === "src/App.tsx" ? { ...p, content: newContent } : p
+      );
+      const list = nextFiles
+        .filter((f) => f?.path && !isConfigPath(f.path))
+        .map((f) => ({ path: f.path, content: String(f.content ?? "") }));
+      runPreview(list);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Modification failed";
       setAiError(e instanceof Error && e.name === "AbortError" ? "Request timed out. Try again." : msg);
@@ -762,48 +763,31 @@ export default function App() {
               />
             </div>
 
-            <div style={{ background: "#fff", display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid #e2e8f0", background: "#fafafa" }}>
-                <h3 style={{ fontSize: "0.6875rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Live preview</h3>
+            <div style={{ background: "#fff", display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: "1px solid #e2e8f0" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid #e2e8f0", background: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)" }}>
+                <h3 style={{ fontSize: "0.6875rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.1em", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 2px rgba(34,197,94,0.3)" }} /> Live preview
+                </h3>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                  {previewBuilding && (
-                    <span style={{ fontSize: "0.75rem", color: "#6366f1", padding: "0.25rem 0.5rem", borderRadius: "6px", background: "rgba(99,102,241,0.1)", fontWeight: 500 }}>
-                      {previewStatus === "mounting" && "Mounting…"}
-                      {previewStatus === "installing" && "Installing…"}
-                      {previewStatus === "starting" && "Starting…"}
-                      {previewStatus === "restarting" && "Restarting…"}
-                      {!previewStatus || !["mounting", "installing", "starting", "restarting"].includes(previewStatus) ? "Preparing…" : null}
-                    </span>
-                  )}
-                  {previewUrl && (
-                    <>
-                      <a href={previewUrl} target="_blank" rel="noopener noreferrer" style={{ padding: "0.5rem 1rem", borderRadius: "8px", fontSize: "0.8125rem", fontWeight: 600, color: "#fff", background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)", textDecoration: "none", boxShadow: "0 2px 8px rgba(99,102,241,0.35)" }} title={previewUrl}>↗ Open in new tab</a>
-                      <button type="button" onClick={() => { try { navigator.clipboard.writeText(previewUrl); } catch (_) {} }} style={{ padding: "0.5rem 1rem", borderRadius: "8px", fontSize: "0.8125rem", fontWeight: 600, color: "#6366f1", border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.08)", cursor: "pointer" }} title="Copy link">Copy link</button>
-                    </>
-                  )}
-                  <span style={{ fontSize: "0.75rem", color: "#64748b", padding: "0.25rem 0.5rem", borderRadius: "6px", background: "#e2e8f0" }}>Vite</span>
-                  <button type="button" onClick={() => runPreview()} disabled={previewBuilding || !projectFiles.length} style={{ padding: "0.375rem 0.75rem", borderRadius: "8px", fontSize: "0.8125rem", fontWeight: 600, color: "#6366f1", border: "none", background: "rgba(99,102,241,0.1)", cursor: previewBuilding || !projectFiles.length ? "default" : "pointer", opacity: previewBuilding || !projectFiles.length ? 0.5 : 1 }} title="Refresh preview" aria-label={previewBuilding ? "Preview building" : "Run preview"}>{previewBuilding ? "…" : "Run"}</button>
+                  <button
+                    type="button"
+                    onClick={() => window.open("/preview-runtime.html", "_blank")}
+                    style={{ padding: "0.5rem 1rem", borderRadius: "8px", fontSize: "0.8125rem", fontWeight: 600, color: "#fff", background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)", border: "none", cursor: "pointer", boxShadow: "0 2px 8px rgba(99,102,241,0.35)" }}
+                  >
+                    ↗ Open in new tab
+                  </button>
+                  <button type="button" onClick={handleRun} disabled={!projectFiles.length} style={{ padding: "0.5rem 1rem", borderRadius: "8px", fontSize: "0.8125rem", fontWeight: 600, color: "#6366f1", border: "1px solid #c7d2fe", background: "#fff", cursor: !projectFiles.length ? "default" : "pointer", opacity: !projectFiles.length ? 0.5 : 1 }} title="Refresh preview" aria-label="Run preview">Run</button>
                 </div>
               </div>
-              {previewUrl && (
-                <div style={{ padding: "0.5rem 1rem", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-                  <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#64748b", flexShrink: 0 }}>Live preview link:</span>
-                  <input type="text" readOnly value={previewUrl} style={{ flex: 1, minWidth: "12rem", padding: "0.375rem 0.75rem", borderRadius: "6px", border: "1px solid #e2e8f0", fontSize: "0.8125rem", color: "#334155", background: "#fff" }} title="Preview URL" />
-                  <a href={previewUrl} target="_blank" rel="noopener noreferrer" style={{ padding: "0.375rem 0.75rem", borderRadius: "6px", fontSize: "0.8125rem", fontWeight: 600, color: "#6366f1", border: "1px solid #c7d2fe", background: "#eef2ff", textDecoration: "none" }}>Open in separate tab</a>
+              {!projectFiles.length && (
+                <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", textAlign: "center", color: "#64748b", fontSize: "0.9375rem", maxWidth: "20rem", zIndex: 1 }}>
+                  <div style={{ width: "48px", height: "48px", margin: "0 auto 1rem", borderRadius: "12px", background: "linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem" }}>◇</div>
+                  <strong style={{ display: "block", color: "#334155", marginBottom: "0.5rem", fontSize: "1rem" }}>Live preview</strong>
+                  <p style={{ margin: 0, lineHeight: 1.5 }}>Enter a prompt above and click <strong>Generate</strong> to build your site, then click <strong>Run</strong> to see it here.</p>
                 </div>
               )}
-              {previewError && <p style={{ padding: "0.5rem 1rem", fontSize: "0.875rem", color: "#dc2626", background: "#fef2f2" }}>{previewError}</p>}
-              {previewStatus === "restarting" && (
-                <p style={{ padding: "0.5rem 1rem", fontSize: "0.875rem", color: "#2563eb", background: "#eff6ff" }}>Preview restarting…</p>
-              )}
-              {!projectFiles.length && (
-                <p style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", textAlign: "center", color: "#64748b", fontSize: "0.9375rem", maxWidth: "22rem" }}>
-                  <strong style={{ display: "block", color: "#334155", marginBottom: "0.5rem", fontSize: "1rem" }}>Live preview</strong>
-                  Add a prompt above and click Generate to build your website. First run may take a minute while dependencies install.
-                </p>
-              )}
-              <div style={{ flex: 1, minHeight: 0, position: "relative", background: "#fff" }}>
-                <iframe ref={iframeRef} title="Preview" style={{ width: "100%", height: "100%", minHeight: "360px", border: "none", display: "block" }} />
+              <div style={{ flex: 1, minHeight: 0, position: "relative", background: "#f8fafc", padding: projectFiles.length ? "12px" : 0 }}>
+                <PreviewFrame key={previewKey} iframeRef={iframeRef} />
               </div>
             </div>
           </div>
