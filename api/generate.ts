@@ -288,8 +288,11 @@ Response must start with { and end with }.`;
 
 function extractJson(text: string): string {
   const t = (text || "").trim();
-  const m = t.match(/```(?:json)?\s*([\s\S]*?)```/) || [];
-  return (m[1] || t).trim();
+  const closed = t.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (closed && closed[1]) return closed[1].trim();
+  const unclosed = t.match(/```(?:json)?\s*([\s\S]+)/);
+  if (unclosed && unclosed[1]) return unclosed[1].trim();
+  return t;
 }
 
 /** Extract first balanced { ... } from string. */
@@ -325,7 +328,12 @@ function extractBalancedJson(str: string): string | null {
   return null;
 }
 
-/** Safety parser: strip code fences, trim, extract JSON. */
+/** Repair common JSON mistakes from LLM output (e.g. trailing commas). */
+function repairJson(s: string): string {
+  return s.replace(/,(\s*[}\]])/g, "$1").replace(/\r\n/g, "\n").trim();
+}
+
+/** Safety parser: strip code fences, trim, extract JSON, repair, then parse. */
 function parseJsonFromAI(raw: string): { ok: boolean; parsed?: any } {
   let text = String(raw || "");
   let cleaned = text
@@ -334,19 +342,23 @@ function parseJsonFromAI(raw: string): { ok: boolean; parsed?: any } {
     .replace(/```json/gi, "")
     .replace(/```/g, "")
     .trim();
-  const toTry = [
+  const candidates = [
     cleaned,
     extractJson(text),
     extractBalancedJson(text),
     extractBalancedJson(cleaned),
   ].filter(Boolean) as string[];
-  for (const s of toTry) {
-    const trimmed = String(s).trim();
-    if (!trimmed.startsWith("{")) continue;
+  const toTry = candidates.map((s) => String(s).trim()).filter((s) => s.startsWith("{"));
+  for (const trimmed of toTry) {
     try {
       return { ok: true, parsed: JSON.parse(trimmed) };
     } catch {
-      //
+      try {
+        const repaired = repairJson(trimmed);
+        if (repaired !== trimmed) return { ok: true, parsed: JSON.parse(repaired) };
+      } catch {
+        //
+      }
     }
   }
   const fallback = extractBalancedJson(cleaned) || extractBalancedJson(text);
@@ -354,7 +366,11 @@ function parseJsonFromAI(raw: string): { ok: boolean; parsed?: any } {
     try {
       return { ok: true, parsed: JSON.parse(fallback) };
     } catch {
-      //
+      try {
+        return { ok: true, parsed: JSON.parse(repairJson(fallback)) };
+      } catch {
+        //
+      }
     }
   }
   return { ok: false };
@@ -589,8 +605,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       max_tokens: 16000,
     });
 
-    const raw = completion.choices[0]?.message?.content ?? "";
-    const parseResult = parseJsonFromAI(raw);
+    let raw = completion.choices[0]?.message?.content ?? "";
+    let parseResult = parseJsonFromAI(raw);
+    if (!parseResult.ok || !parseResult.parsed) {
+      const retryMessage =
+        "Return ONLY valid JSON. No markdown code fences, no text before or after. Start with { and end with }. Your previous response could not be parsed.\n\nUser request: " +
+        userMessageForGenerate;
+      const retryCompletion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: "Output MUST be a single JSON object only. No markdown, no explanations." },
+          { role: "user", content: retryMessage },
+        ],
+        temperature: 0.3,
+        max_tokens: 16000,
+      });
+      raw = retryCompletion.choices[0]?.message?.content ?? "";
+      parseResult = parseJsonFromAI(raw);
+    }
     if (!parseResult.ok || !parseResult.parsed) {
       return res.status(500).json({
         error: true,

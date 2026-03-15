@@ -10,6 +10,11 @@ export type ParseResult =
   | { ok: true; data: unknown }
   | { ok: false; error: string; raw?: string }
 
+/** Repair common JSON mistakes from LLM output (e.g. trailing commas). */
+function repairJson(s: string): string {
+  return s.replace(/,(\s*[}\]])/g, '$1').replace(/\r\n/g, '\n').trim()
+}
+
 /** Extract JSON from text using multiple strategies (object or array). */
 function extractJsonCandidates(text: string): string[] {
   const trimmed = (text || '').trim()
@@ -40,12 +45,17 @@ export function parseAIResponse(responseText: string): ParseResult {
   const raw = typeof responseText === 'string' ? responseText : String(responseText ?? '')
   console.log('AI raw response:', raw.slice(0, 2000) + (raw.length > 2000 ? '...' : ''))
 
-  // Try direct parse first
+  // Try direct parse first, then repaired raw
   try {
     const data = JSON.parse(raw)
     return { ok: true, data }
   } catch {
-    // continue
+    try {
+      const data = JSON.parse(repairJson(raw))
+      return { ok: true, data }
+    } catch {
+      // continue
+    }
   }
 
   const candidates = extractJsonCandidates(raw)
@@ -54,7 +64,15 @@ export function parseAIResponse(responseText: string): ParseResult {
       const data = JSON.parse(candidate)
       return { ok: true, data }
     } catch {
-      // try next candidate
+      try {
+        const repaired = repairJson(candidate)
+        if (repaired !== candidate) {
+          const data = JSON.parse(repaired)
+          return { ok: true, data }
+        }
+      } catch {
+        // try next candidate
+      }
     }
   }
 
