@@ -206,7 +206,7 @@ Each card: avatar (use <img src="https://i.pravatar.cc/100?u=1" alt="" className
 
 ABOUT US SECTION (MANDATORY)
 
-Section with id="about". Headline "About Us" or "Who We Are". Company mission/story (2–3 paragraphs), optional team or values. Real copy that matches the product. Rounded-2xl cards or clean grid. No placeholder text.
+Section with id="about". Headline "About Us" or "Who We Are". Include at least one real photo: use <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80" alt="Team" className="rounded-2xl w-full object-cover" /> (or similar Unsplash/Picsum URL) in a two-column layout — image on one side, mission/story (2–3 paragraphs) and optional values on the other. Real copy that matches the product. Rounded-2xl cards or clean grid. No placeholder text.
 
 ------------------------------------------------
 
@@ -461,12 +461,19 @@ export default function About() {
   return (
     <section id="about" className="py-24 px-6 bg-gradient-to-b from-slate-50 to-white">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">About Us</h2>
-        <p className="text-lg text-slate-600 max-w-2xl mb-6">We help businesses grow with modern tools and expert support. Our mission is to deliver real value through quality products and outstanding service.</p>
-        <p className="text-lg text-slate-600 max-w-2xl mb-8">Founded with a focus on simplicity and results, we work with teams of all sizes to achieve their goals. Get in touch to learn how we can help you.</p>
-        <div className="flex flex-wrap gap-6">
-          <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-indigo-50 text-indigo-700 font-semibold">Quality first</div>
-          <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-violet-50 text-violet-700 font-semibold">Customer focused</div>
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80" alt="Team" className="rounded-2xl w-full object-cover shadow-xl" />
+          </div>
+          <div>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">About Us</h2>
+            <p className="text-lg text-slate-600 max-w-2xl mb-6">We help businesses grow with modern tools and expert support. Our mission is to deliver real value through quality products and outstanding service.</p>
+            <p className="text-lg text-slate-600 max-w-2xl mb-8">Founded with a focus on simplicity and results, we work with teams of all sizes to achieve their goals. Get in touch to learn how we can help you.</p>
+            <div className="flex flex-wrap gap-6">
+              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-indigo-50 text-indigo-700 font-semibold">Quality first</div>
+              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-violet-50 text-violet-700 font-semibold">Customer focused</div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

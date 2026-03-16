@@ -24,11 +24,11 @@ export default function LandingPage() {
               <span className="text-xl font-bold tracking-tight text-white">Appfactory</span>
             </Link>
             <div className="flex items-center gap-10">
-              <Link href="#features" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">Features</Link>
-              <Link href="#pricing" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">Pricing</Link>
-              <Link href="#about" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">About</Link>
-              <Link href="#faq" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">FAQ</Link>
-              <Link href="#contact" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">Contact</Link>
+              <a href="#features" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">Features</a>
+              <a href="#pricing" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">Pricing</a>
+              <a href="#about" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">About</a>
+              <a href="#faq" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">FAQ</a>
+              <a href="#contact" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">Contact</a>
               <Link
                 href="/app"
                 className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white text-sm font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
@@ -253,43 +253,67 @@ export default function LandingPage() {
       </section>
 
       {/* About Us */}
-      <section id="about" className="relative z-10 py-24 px-4 sm:px-6 lg:px-8 border-t border-white/[0.06]">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <span className="inline-block text-sm font-semibold text-indigo-400 uppercase tracking-wider mb-4">About us</span>
-              <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6 tracking-tight">
-                We help you ship products, not code
-              </h2>
-              <p className="text-lg text-gray-400 leading-relaxed mb-6">
-                Appfactory was built so anyone can turn an idea into a real app — without learning frameworks or waiting on dev teams. We combine AI code generation with instant preview and one-click deploy so you can iterate in minutes.
-              </p>
-              <p className="text-lg text-gray-400 leading-relaxed mb-8">
-                Our mission is simple: make building software as easy as describing it. Whether you need a landing page, a dashboard, or a full SaaS prototype, you get production-ready React and Tailwind code you can own and deploy anywhere.
-              </p>
-              <div className="flex flex-wrap gap-6">
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-500/20 text-indigo-400 text-xl">◇</span>
-                  <span className="text-white font-semibold">AI-first</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-12 h-12 rounded-xl bg-violet-500/20 text-violet-400 text-xl">◇</span>
-                  <span className="text-white font-semibold">No lock-in</span>
+      <section id="about" className="relative z-10 py-24 px-4 sm:px-6 lg:px-8 border-t border-white/[0.06] overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <span className="inline-block text-sm font-semibold text-indigo-400 uppercase tracking-wider mb-4">About us</span>
+            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight">
+              We help you ship products, not code
+            </h2>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              From idea to production — no frameworks to learn, no dev teams to wait on.
+            </p>
+          </div>
+          <div className="grid lg:grid-cols-2 gap-16 lg:gap-20 items-center">
+            <div className="relative order-2 lg:order-1">
+              <div className="relative rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl shadow-indigo-500/10 group">
+                <img
+                  src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80"
+                  alt="Team collaboration"
+                  className="w-full aspect-[4/3] object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050508]/80 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute bottom-0 left-0 right-0 p-6 text-left">
+                  <p className="text-white/90 font-semibold text-lg">Built by builders, for builders</p>
+                  <p className="text-gray-400 text-sm mt-1">Real apps, real fast</p>
                 </div>
               </div>
+              <div className="absolute -z-10 -bottom-6 -right-6 w-full h-full rounded-3xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 blur-2xl" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: 'Projects shipped', value: '10k+' },
-                { label: 'Templates', value: '50+' },
-                { label: 'Uptime', value: '99.9%' },
-                { label: 'Support', value: '24/7' },
-              ].map((item) => (
-                <div key={item.label} className="p-6 rounded-2xl border border-white/10 bg-white/[0.03] hover:border-indigo-500/30 transition-colors">
-                  <div className="text-2xl font-bold text-white">{item.value}</div>
-                  <div className="text-sm text-gray-500 mt-1">{item.label}</div>
+            <div className="order-1 lg:order-2 space-y-8">
+              <p className="text-lg text-gray-400 leading-relaxed">
+                Appfactory was built so anyone can turn an idea into a real app — without learning frameworks or waiting on dev teams. We combine AI code generation with instant preview and one-click deploy so you can iterate in minutes.
+              </p>
+              <p className="text-lg text-gray-400 leading-relaxed">
+                Our mission is simple: make building software as easy as describing it. Whether you need a landing page, a dashboard, or a full SaaS prototype, you get production-ready React and Tailwind code you can own and deploy anywhere.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+                  <span className="flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 text-lg">◇</span>
+                  <span className="text-white font-semibold">AI-first</span>
                 </div>
-              ))}
+                <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                  <span className="flex items-center justify-center w-10 h-10 rounded-lg bg-violet-500/20 text-violet-400 text-lg">◇</span>
+                  <span className="text-white font-semibold">No lock-in</span>
+                </div>
+                <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-white/5 border border-white/10">
+                  <span className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 text-lg">✓</span>
+                  <span className="text-white font-semibold">Export & own</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-4">
+                {[
+                  { label: 'Projects shipped', value: '10k+' },
+                  { label: 'Templates', value: '50+' },
+                  { label: 'Uptime', value: '99.9%' },
+                  { label: 'Support', value: '24/7' },
+                ].map((item) => (
+                  <div key={item.label} className="p-5 rounded-2xl border border-white/10 bg-white/[0.03] hover:border-indigo-500/30 hover:bg-white/[0.05] transition-all duration-300">
+                    <div className="text-2xl font-bold text-white">{item.value}</div>
+                    <div className="text-sm text-gray-500 mt-1">{item.label}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -448,11 +472,11 @@ export default function LandingPage() {
             <div>
               <h3 className="text-white font-semibold mb-5">Product</h3>
               <ul className="space-y-3 text-sm">
-                <li><Link href="#features" className="text-gray-500 hover:text-white hover:underline transition-colors">Features</Link></li>
-                <li><Link href="#pricing" className="text-gray-500 hover:text-white hover:underline transition-colors">Pricing</Link></li>
-                <li><Link href="#about" className="text-gray-500 hover:text-white hover:underline transition-colors">About</Link></li>
-                <li><Link href="#faq" className="text-gray-500 hover:text-white hover:underline transition-colors">FAQ</Link></li>
-                <li><Link href="#contact" className="text-gray-500 hover:text-white hover:underline transition-colors">Contact</Link></li>
+                <li><a href="#features" className="text-gray-500 hover:text-white hover:underline transition-colors">Features</a></li>
+                <li><a href="#pricing" className="text-gray-500 hover:text-white hover:underline transition-colors">Pricing</a></li>
+                <li><a href="#about" className="text-gray-500 hover:text-white hover:underline transition-colors">About</a></li>
+                <li><a href="#faq" className="text-gray-500 hover:text-white hover:underline transition-colors">FAQ</a></li>
+                <li><a href="#contact" className="text-gray-500 hover:text-white hover:underline transition-colors">Contact</a></li>
                 <li><Link href="/app" className="text-gray-500 hover:text-white hover:underline transition-colors">Get started</Link></li>
               </ul>
             </div>

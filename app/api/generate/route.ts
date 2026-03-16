@@ -37,7 +37,7 @@ Every section MUST have an id so nav links work: id="features", id="pricing", id
 4. TESTIMONIALS — 3 quotes. Real names, companies, quotes. Avatars: pravatar or initials.
 5. HOW IT WORKS — Two columns or 3 steps. Clear headings, short paragraphs.
 6. PRICING — Section id="pricing". 3 tiers, real feature bullets, one "Most Popular". CTAs can be <a href="#contact">.
-7. ABOUT US — Section id="about". Headline "About Us" or "Who We Are". 2–3 paragraphs company mission/story, optional team/values. Real copy for the product. No placeholders.
+7. ABOUT US — Section id="about". Headline "About Us" or "Who We Are". Include at least one real photo: <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80" alt="Team" /> (or similar Unsplash/Picsum URL) in a two-column layout. 2–3 paragraphs company mission/story, optional team/values. Real copy. No placeholders.
 8. FAQ — Section id="faq". Headline "Frequently Asked Questions". 5–7 Q&A. Use useState for accordion (which item is open). Specific questions (e.g. "How do I get started?", "What payment methods do you accept?") and helpful 2–3 sentence answers. Rounded cards, padding. No "Question 1" placeholders.
 9. FINAL CTA — Dark background (#0f172a), headline, single CTA <a href="#contact">. padding 4rem 2rem.
 10. CONTACT — Section id="contact". Headline "Contact Us" or "Get in Touch". EITHER (a) contact form (name, email, message, submit with e.preventDefault()) OR (b) contact info (email mailto:, phone, address in cards). Clean cards, good spacing.
