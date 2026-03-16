@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Preview</title>
+  <script>
+    (function(){ var w = console.warn; console.warn = function(m) { if (typeof m === 'string' && m.indexOf('cdn.tailwindcss.com') !== -1) return; return w.apply(console, arguments); }; })();
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -91,11 +94,12 @@
           compiled = compiled.replace(/\bexport\s+class\s+/g, "class ");
           compiled = compiled.replace(/export\s*\{[^}]*\}\s*;?/g, "");
           var componentNames = ["Navbar","Hero","Features","Testimonials","Pricing","CTA","Footer","About","FAQ","Contact","OurTeam","ContactSection","FinalCTA","Showcase","ProblemSolution","Card","Button","Container","Section"];
-          var placeholderDefs = componentNames.map(function(n) { return "if (typeof " + n + " === 'undefined') " + n + " = Placeholder('" + n + "');"; }).join(" ");
+          var placeholderAssigns = componentNames.map(function(n) { return "var " + n + " = Placeholder('" + n + "');"; }).join(" ");
           var globals = "const { useState, useEffect, useRef, useMemo, useCallback, createElement, Component } = React; "
             + "var Link = function Link(props) { var p = props || {}; var href = p.href || '#'; var rest = {}; for (var k in p) { if (k !== 'href' && k !== 'to' && k !== 'smooth') rest[k] = p[k]; } if (p.to && !p.href) href = p.to; return createElement('a', Object.assign({ href: href }, rest), p.children); }; "
-            + "var Placeholder = function(name) { return function(props) { return createElement('div', { style: { padding: '12px 16px', border: '1px dashed #e2e8f0', borderRadius: '8px', margin: '8px 0', fontSize: '14px', color: '#64748b', minHeight: '24px' } }, name); }; ";
-          var fn = new Function("React", "ReactDOM", "return (function(){ " + globals + compiled + "; " + placeholderDefs + " return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null); })()");
+            + "var Placeholder = function(name) { return function(props) { return createElement('div', { style: { padding: '12px 16px', border: '1px dashed #e2e8f0', borderRadius: '8px', margin: '8px 0', fontSize: '14px', color: '#64748b', minHeight: '24px' } }, name); }; "
+            + placeholderAssigns + " ";
+          var fn = new Function("React", "ReactDOM", "return (function(){ " + globals + compiled + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null); })()");
           var App = fn(window.React, window.ReactDOM);
           if (App && typeof App === "function") {
             if (!window.__app_root__) {
@@ -104,6 +108,7 @@
             function ErrorBoundary(props) { React.Component.call(this, props); this.state = { error: null }; }
             ErrorBoundary.prototype = Object.create(React.Component.prototype);
             ErrorBoundary.prototype.constructor = ErrorBoundary;
+            if (ErrorBoundary.prototype.getDerivedStateFromError) delete ErrorBoundary.prototype.getDerivedStateFromError;
             ErrorBoundary.getDerivedStateFromError = function(err) { return { error: err }; };
             ErrorBoundary.prototype.componentDidCatch = function(err, info) { console.error("Preview error", err, info); };
             ErrorBoundary.prototype.render = function() {
