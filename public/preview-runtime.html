@@ -95,8 +95,8 @@
           compiled = compiled.replace(/export\s*\{[^}]*\}\s*;?/g, "");
           var componentNames = ["Navbar","Hero","Features","Testimonials","Pricing","CTA","Footer","About","FAQ","Contact","OurTeam","ContactSection","FinalCTA","Showcase","ProblemSolution","Card","Button","Container","Section"];
           componentNames.forEach(function(n) {
-            var r = new RegExp("createElement\\s*\\(\\s*" + n + "\\b", "g");
-            compiled = compiled.replace(r, "createElement((typeof " + n + " !== 'undefined' ? " + n + " : __ph." + n + ")");
+            var r = new RegExp("createElement\\s*\\(\\s*" + n + "\\b(?!\\w)", "g");
+            compiled = compiled.replace(r, "createElement((typeof " + n + " !== 'undefined' ? " + n + " : __ph[" + JSON.stringify(n) + "])");
           });
           var __phAssign = "var __ph = { " + componentNames.map(function(n) { return n + ": Placeholder('" + n + "')"; }).join(", ") + " }; ";
           var globals = "const { useState, useEffect, useRef, useMemo, useCallback, createElement, Component } = React; "
