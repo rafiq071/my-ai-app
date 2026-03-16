@@ -94,9 +94,14 @@
           compiled = compiled.replace(/\bexport\s+class\s+/g, "class ");
           compiled = compiled.replace(/export\s*\{[^}]*\}\s*;?/g, "");
           var componentNames = ["Navbar","Hero","Features","Testimonials","Pricing","CTA","Footer","About","FAQ","Contact","OurTeam","ContactSection","FinalCTA","Showcase","ProblemSolution","Card","Button","Container","Section"];
+          componentNames.sort(function(a, b) { return b.length - a.length; });
           componentNames.forEach(function(n) {
-            var r = new RegExp("createElement\\s*\\(\\s*\\b" + n + "\\b(?!\\w)", "g");
-            compiled = compiled.replace(r, "createElement((typeof " + n + " !== 'undefined' ? " + n + " : __ph[" + JSON.stringify(n) + "])");
+            var esc = n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            var fallback = "(typeof " + n + " !== 'undefined' ? " + n + " : __ph[" + JSON.stringify(n) + "])";
+            var r1 = new RegExp("createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*(?=[,)])", "g");
+            compiled = compiled.replace(r1, "createElement(" + fallback + " ");
+            var r2 = new RegExp("React\\.createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*(?=[,)])", "g");
+            compiled = compiled.replace(r2, "React.createElement(" + fallback + " ");
           });
           var __phAssign = "var __ph = { " + componentNames.map(function(n) { return n + ": Placeholder('" + n + "')"; }).join(", ") + " }; ";
           var globals = "const { useState, useEffect, useRef, useMemo, useCallback, createElement, Component } = React; "
