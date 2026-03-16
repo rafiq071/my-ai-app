@@ -94,11 +94,15 @@
           compiled = compiled.replace(/\bexport\s+class\s+/g, "class ");
           compiled = compiled.replace(/export\s*\{[^}]*\}\s*;?/g, "");
           var componentNames = ["Navbar","Hero","Features","Testimonials","Pricing","CTA","Footer","About","FAQ","Contact","OurTeam","ContactSection","FinalCTA","Showcase","ProblemSolution","Card","Button","Container","Section"];
-          var placeholderAssigns = componentNames.map(function(n) { return "var " + n + " = Placeholder('" + n + "');"; }).join(" ");
+          componentNames.forEach(function(n) {
+            var r = new RegExp("createElement\\s*\\(\\s*" + n + "\\b", "g");
+            compiled = compiled.replace(r, "createElement((typeof " + n + " !== 'undefined' ? " + n + " : __ph." + n + ")");
+          });
+          var __phAssign = "var __ph = { " + componentNames.map(function(n) { return n + ": Placeholder('" + n + "')"; }).join(", ") + " }; ";
           var globals = "const { useState, useEffect, useRef, useMemo, useCallback, createElement, Component } = React; "
             + "var Link = function Link(props) { var p = props || {}; var href = p.href || '#'; var rest = {}; for (var k in p) { if (k !== 'href' && k !== 'to' && k !== 'smooth') rest[k] = p[k]; } if (p.to && !p.href) href = p.to; return createElement('a', Object.assign({ href: href }, rest), p.children); }; "
             + "var Placeholder = function(name) { return function(props) { return createElement('div', { style: { padding: '12px 16px', border: '1px dashed #e2e8f0', borderRadius: '8px', margin: '8px 0', fontSize: '14px', color: '#64748b', minHeight: '24px' } }, name); }; "
-            + placeholderAssigns + " ";
+            + __phAssign + " ";
           var fn = new Function("React", "ReactDOM", "return (function(){ " + globals + compiled + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null); })()");
           var App = fn(window.React, window.ReactDOM);
           if (App && typeof App === "function") {
