@@ -32,30 +32,31 @@ export default function LandingPage() {
         <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '48px 48px' }} />
       </div>
 
-      {/* Navigation */}
+      {/* Header */}
       <header className="relative z-50 sticky top-0">
-        <nav className="border-b border-white/[0.08] bg-[#050508]/95 backdrop-blur-xl">
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent pointer-events-none" aria-hidden />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-20">
-              <Link href="/" className="flex items-center gap-3 group">
-                <span className="flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-xl shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 group-hover:scale-105 transition-all duration-300">◇</span>
+        <nav className="border-b border-white/[0.08] bg-[#050508]/98 backdrop-blur-2xl">
+          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" aria-hidden />
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent pointer-events-none" aria-hidden />
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between min-h-[5.5rem]">
+              <Link href="/" className="flex items-center gap-3.5 group">
+                <span className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-xl shadow-lg shadow-indigo-500/35 group-hover:shadow-indigo-500/55 group-hover:scale-105 transition-all duration-300 ring-2 ring-white/5">◇</span>
                 <span className="text-xl font-bold tracking-tight text-white">Appfactory</span>
               </Link>
-              <div className="flex items-center gap-1 sm:gap-8">
+              <div className="flex items-center gap-1 sm:gap-2">
                 {navLinks.map(({ href, label }) => (
                   <a
                     key={href}
                     href={href}
                     onClick={(e) => scrollToSection(e, href)}
-                    className="text-sm font-medium text-gray-400 hover:text-white transition-colors py-2 px-3 rounded-lg hover:bg-white/5 relative after:absolute after:left-3 after:right-3 after:bottom-2 after:h-px after:bg-indigo-400 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
+                    className="text-sm font-medium text-gray-400 hover:text-white transition-all duration-200 py-2.5 px-4 rounded-xl hover:bg-white/[0.06] hover:border-white/10 border border-transparent"
                   >
                     {label}
                   </a>
                 ))}
                 <Link
                   href="/app"
-                  className="ml-2 sm:ml-0 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white text-sm font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 border border-indigo-400/20"
+                  className="ml-2 sm:ml-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white text-sm font-semibold shadow-lg shadow-indigo-500/35 hover:shadow-indigo-500/55 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 border border-indigo-400/30 hover:border-indigo-300/40"
                 >
                   Get Started →
                 </Link>
@@ -326,10 +327,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FAQ — fancy accordion */}
-      <section id="faq" className="relative z-10 py-24 px-4 sm:px-6 lg:px-8 border-t border-white/[0.06]">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
+      {/* FAQ */}
+      <section id="faq" className="relative z-10 py-24 px-4 sm:px-6 lg:px-8 border-t border-white/[0.06] overflow-hidden">
+        <div className="absolute top-1/2 left-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] -translate-y-1/2 -translate-x-1/2 pointer-events-none" aria-hidden />
+        <div className="absolute top-1/2 right-0 w-80 h-80 bg-violet-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" aria-hidden />
+        <div className="relative max-w-4xl mx-auto">
+          <div className="text-center mb-20">
             <span className="inline-block text-sm font-semibold text-indigo-400 uppercase tracking-wider mb-4">FAQ</span>
             <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight">
               Frequently asked questions
@@ -338,7 +341,7 @@ export default function LandingPage() {
               Everything you need to know about building with Appfactory
             </p>
           </div>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-5">
             {[
               { q: 'How does AI code generation work?', a: 'We use GPT-4 and Gemini to understand your description and generate complete, production-ready apps. The AI writes React, TypeScript, and Tailwind — best practices included.' },
               { q: 'Can I export my code?', a: 'Yes. Download your project as a ZIP anytime. Open in VS Code, run npm install, and deploy anywhere. No lock-in.' },
@@ -349,18 +352,20 @@ export default function LandingPage() {
             ].map((faq, i) => (
               <details
                 key={faq.q}
-                className="group p-6 rounded-2xl border-2 border-white/10 bg-white/[0.03] hover:border-white/20 [&[open]]:border-indigo-500/50 [&[open]]:bg-gradient-to-br [&[open]]:from-indigo-500/10 [&[open]]:to-transparent transition-all duration-300 [&[open]_summary_svg]:rotate-180 shadow-xl shadow-black/5"
+                className="group p-6 sm:p-7 rounded-2xl border-2 border-white/10 bg-white/[0.04] hover:border-white/20 [&[open]]:border-indigo-500/40 [&[open]]:bg-gradient-to-br [&[open]]:from-indigo-500/15 [&[open]]:to-violet-500/5 [&[open]]:shadow-lg [&[open]]:shadow-indigo-500/10 transition-all duration-300 [&[open]_summary_svg]:rotate-180"
               >
                 <summary className="flex items-start justify-between gap-4 cursor-pointer list-none">
-                  <span className="flex items-center gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold">{i + 1}</span>
-                    <span className="text-lg font-semibold text-white">{faq.q}</span>
+                  <span className="flex items-center gap-4">
+                    <span className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/30 to-violet-500/30 text-indigo-300 flex items-center justify-center text-sm font-bold border border-white/10">
+                      {i + 1}
+                    </span>
+                    <span className="text-base sm:text-lg font-semibold text-white">{faq.q}</span>
                   </span>
-                  <svg className="w-5 h-5 text-gray-400 group-hover:text-indigo-400 flex-shrink-0 mt-0.5 transition-all duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-5 h-5 text-gray-400 group-hover:text-indigo-400 flex-shrink-0 mt-1 transition-all duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </summary>
-                <p className="mt-4 ml-11 text-gray-400 leading-relaxed pl-0 md:pl-0">{faq.a}</p>
+                <p className="mt-5 ml-14 text-gray-400 leading-relaxed">{faq.a}</p>
               </details>
             ))}
           </div>
@@ -463,51 +468,62 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/[0.06] py-16 px-4 sm:px-6 lg:px-8">
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" aria-hidden />
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-12">
-            <div>
-              <div className="flex items-center gap-3 mb-5">
-                <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-lg shadow-lg shadow-indigo-500/20">◇</span>
-                <span className="text-lg font-bold text-white">Appfactory</span>
+      <footer className="relative z-10 overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" aria-hidden />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" aria-hidden />
+        <div className="relative py-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid md:grid-cols-4 gap-12 lg:gap-16">
+              <div className="md:col-span-1">
+                <Link href="/" className="inline-flex items-center gap-3 mb-6 group">
+                  <span className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-lg shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 group-hover:scale-105 transition-all duration-300 ring-2 ring-white/5">◇</span>
+                  <span className="text-xl font-bold text-white">Appfactory</span>
+                </Link>
+                <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
+                  Build production-ready apps with AI in minutes. No code required.
+                </p>
+                <div className="flex gap-3 mt-6">
+                  <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:border-indigo-500/30 hover:bg-indigo-500/10 transition-all" aria-label="Twitter">𝕏</a>
+                  <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:border-indigo-500/30 hover:bg-indigo-500/10 transition-all font-bold" aria-label="GitHub">G</a>
+                </div>
               </div>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                Build apps with AI in minutes
+              <div>
+                <h3 className="text-white font-semibold mb-6 text-sm uppercase tracking-wider text-gray-400">Product</h3>
+                <ul className="space-y-4 text-sm">
+                  {navLinks.map(({ href, label }) => (
+                    <li key={href}>
+                      <a href={href} onClick={(e) => scrollToSection(e, href)} className="text-gray-400 hover:text-white transition-colors">
+                        {label}
+                      </a>
+                    </li>
+                  ))}
+                  <li><Link href="/app" className="text-gray-400 hover:text-white transition-colors">Get started</Link></li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-white font-semibold mb-6 text-sm uppercase tracking-wider text-gray-400">Legal</h3>
+                <ul className="space-y-4 text-sm">
+                  <li><Link href="/legal/terms" className="text-gray-400 hover:text-white transition-colors">Terms</Link></li>
+                  <li><Link href="/legal/privacy" className="text-gray-400 hover:text-white transition-colors">Privacy</Link></li>
+                  <li><Link href="/legal/cookies" className="text-gray-400 hover:text-white transition-colors">Cookies</Link></li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-white font-semibold mb-6 text-sm uppercase tracking-wider text-gray-400">Contact</h3>
+                <ul className="space-y-4 text-sm">
+                  <li><a href="mailto:support@example.com" className="text-gray-400 hover:text-white transition-colors">Support</a></li>
+                  <li><a href="#contact" onClick={(e) => scrollToSection(e, '#contact')} className="text-gray-400 hover:text-white transition-colors">Get in touch</a></li>
+                </ul>
+              </div>
+            </div>
+            <div className="mt-20 pt-10 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-gray-500 text-sm">
+                © 2025 Appfactory. All rights reserved.
+              </p>
+              <p className="text-gray-600 text-xs">
+                Built with AI · Deploy anywhere
               </p>
             </div>
-            <div>
-              <h3 className="text-white font-semibold mb-5">Product</h3>
-              <ul className="space-y-3 text-sm">
-                {navLinks.map(({ href, label }) => (
-                  <li key={href}>
-                    <a href={href} onClick={(e) => scrollToSection(e, href)} className="text-gray-500 hover:text-white hover:underline transition-colors">
-                      {label}
-                    </a>
-                  </li>
-                ))}
-                <li><Link href="/app" className="text-gray-500 hover:text-white hover:underline transition-colors">Get started</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-white font-semibold mb-5">Legal</h3>
-              <ul className="space-y-3 text-sm">
-                <li><Link href="/legal/terms" className="text-gray-500 hover:text-white hover:underline transition-colors">Terms</Link></li>
-                <li><Link href="/legal/privacy" className="text-gray-500 hover:text-white hover:underline transition-colors">Privacy</Link></li>
-                <li><Link href="/legal/cookies" className="text-gray-500 hover:text-white hover:underline transition-colors">Cookies</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-white font-semibold mb-5">Connect</h3>
-              <ul className="space-y-3 text-sm">
-                <li><a href="https://twitter.com" className="text-gray-500 hover:text-white hover:underline transition-colors" target="_blank" rel="noopener noreferrer">Twitter</a></li>
-                <li><a href="https://github.com" className="text-gray-500 hover:text-white hover:underline transition-colors" target="_blank" rel="noopener noreferrer">GitHub</a></li>
-                <li><a href="mailto:support@example.com" className="text-gray-500 hover:text-white hover:underline transition-colors">Support</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="mt-16 pt-8 border-t border-white/[0.06] text-center text-gray-500 text-sm">
-            © 2025 Appfactory. All rights reserved.
           </div>
         </div>
       </footer>
