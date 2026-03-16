@@ -3,6 +3,23 @@
 import React from 'react'
 import Link from 'next/link'
 
+function scrollToSection(e: React.MouseEvent<HTMLAnchorElement>, hash: string) {
+  const id = hash.replace('#', '')
+  const el = document.getElementById(id)
+  if (el) {
+    e.preventDefault()
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+const navLinks = [
+  { href: '#features', label: 'Features' },
+  { href: '#pricing', label: 'Pricing' },
+  { href: '#about', label: 'About' },
+  { href: '#faq', label: 'FAQ' },
+  { href: '#contact', label: 'Contact' },
+] as const
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#050508] text-white overflow-x-hidden font-display">
@@ -16,29 +33,37 @@ export default function LandingPage() {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-50 border-b border-white/[0.06] bg-[#050508]/90 backdrop-blur-xl sticky top-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            <Link href="/" className="flex items-center gap-3 group">
-              <span className="flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-xl shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 group-hover:scale-105 transition-all duration-300">◇</span>
-              <span className="text-xl font-bold tracking-tight text-white">Appfactory</span>
-            </Link>
-            <div className="flex items-center gap-10">
-              <a href="#features" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">Features</a>
-              <a href="#pricing" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">Pricing</a>
-              <a href="#about" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">About</a>
-              <a href="#faq" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">FAQ</a>
-              <a href="#contact" className="text-sm font-medium text-gray-400 hover:text-white transition-colors relative after:absolute after:left-0 after:bottom-[-4px] after:h-px after:w-0 after:bg-indigo-400 after:transition-all hover:after:w-full">Contact</a>
-              <Link
-                href="/app"
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white text-sm font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-              >
-                Get Started →
+      <header className="relative z-50 sticky top-0">
+        <nav className="border-b border-white/[0.08] bg-[#050508]/95 backdrop-blur-xl">
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent pointer-events-none" aria-hidden />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-20">
+              <Link href="/" className="flex items-center gap-3 group">
+                <span className="flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-xl shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 group-hover:scale-105 transition-all duration-300">◇</span>
+                <span className="text-xl font-bold tracking-tight text-white">Appfactory</span>
               </Link>
+              <div className="flex items-center gap-1 sm:gap-8">
+                {navLinks.map(({ href, label }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    onClick={(e) => scrollToSection(e, href)}
+                    className="text-sm font-medium text-gray-400 hover:text-white transition-colors py-2 px-3 rounded-lg hover:bg-white/5 relative after:absolute after:left-3 after:right-3 after:bottom-2 after:h-px after:bg-indigo-400 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
+                  >
+                    {label}
+                  </a>
+                ))}
+                <Link
+                  href="/app"
+                  className="ml-2 sm:ml-0 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white text-sm font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 border border-indigo-400/20"
+                >
+                  Get Started →
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      </header>
 
       {/* Hero */}
       <section className="relative pt-28 pb-36 px-4 sm:px-6 lg:px-8">
@@ -94,10 +119,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features — Bento grid */}
+      {/* Features */}
       <section id="features" className="relative z-10 py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-24">
+          <div className="text-center mb-20">
+            <span className="inline-block text-sm font-semibold text-indigo-400 uppercase tracking-wider mb-4">Features</span>
             <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight">
               Everything you need to ship
             </h2>
@@ -107,74 +133,55 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Large feature — spans 2 cols on lg */}
-            <div className="lg:col-span-2 p-8 rounded-3xl border border-white/10 bg-white/[0.03] hover:border-[#6366f1]/50 hover:bg-white/[0.05] transition-all duration-300 group shadow-xl shadow-black/5">
-              <div className="flex items-start gap-6">
-                <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center text-2xl shadow-lg shadow-indigo-500/25 group-hover:scale-105 group-hover:shadow-indigo-500/40 transition-all duration-300">
+            {/* Hero feature card — spans 2 cols */}
+            <div className="lg:col-span-2 group relative p-8 sm:p-10 rounded-3xl border-2 border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] hover:border-indigo-500/40 hover:shadow-[0_0_40px_-12px_rgba(99,102,241,0.4)] transition-all duration-300 overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/20 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+              <div className="relative flex flex-col sm:flex-row sm:items-start gap-6">
+                <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center text-3xl shadow-xl shadow-indigo-500/30 group-hover:scale-110 group-hover:shadow-indigo-500/50 transition-all duration-300">
                   🤖
                 </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-white mb-2">AI code generation</h3>
-                  <p className="text-gray-400 leading-relaxed">
+                <div className="flex-1">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">AI code generation</h3>
+                  <p className="text-gray-400 leading-relaxed text-lg">
                     GPT-4 & Gemini powered. Describe what you want — get a full React + TypeScript app with Tailwind. Production-ready structure, components, and styling.
                   </p>
                 </div>
               </div>
-              <div className="mt-8 grid grid-cols-2 gap-4">
-                <div className="rounded-xl bg-gradient-to-br from-indigo-500/10 to-violet-500/10 border border-white/10 p-4">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Preview</p>
-                  <div className="flex gap-2 items-end h-10">
-                    <span className="w-8 rounded bg-indigo-500/60" style={{ height: '60%' }} />
-                    <span className="w-8 rounded bg-violet-500/60" style={{ height: '100%' }} />
-                    <span className="w-8 rounded bg-indigo-500/40" style={{ height: '40%' }} />
+              <div className="relative mt-8 grid grid-cols-2 gap-4">
+                <div className="rounded-2xl bg-gradient-to-br from-indigo-500/15 to-violet-500/10 border border-indigo-500/20 p-5">
+                  <p className="text-xs font-semibold text-indigo-300/90 uppercase tracking-wider mb-3">Preview</p>
+                  <div className="flex gap-2 items-end h-12">
+                    <span className="w-10 rounded-lg bg-indigo-500/70" style={{ height: '55%' }} />
+                    <span className="w-10 rounded-lg bg-violet-500/70" style={{ height: '100%' }} />
+                    <span className="w-10 rounded-lg bg-indigo-400/50" style={{ height: '45%' }} />
                   </div>
                 </div>
-                <div className="rounded-xl bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-white/10 p-4">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Output</p>
-                  <p className="text-sm text-gray-400 font-mono">App.tsx · 12 files</p>
+                <div className="rounded-2xl bg-gradient-to-br from-violet-500/15 to-purple-500/10 border border-violet-500/20 p-5">
+                  <p className="text-xs font-semibold text-violet-300/90 uppercase tracking-wider mb-3">Output</p>
+                  <p className="text-sm text-gray-300 font-mono">App.tsx · 12 files</p>
                 </div>
               </div>
             </div>
 
-            <div className="p-8 rounded-3xl border border-white/10 bg-white/[0.03] hover:border-[#6366f1]/50 hover:bg-white/[0.05] transition-all duration-300 hover:-translate-y-1 shadow-xl shadow-black/5">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-3xl mb-4" aria-hidden>👁️</div>
-              <h3 className="text-xl font-bold text-white mb-2">Real-time preview</h3>
-              <p className="text-gray-400">
-                See your app in the browser instantly. Edit and refresh — no build step. Tailwind-powered preview so designs look exactly right.
-              </p>
-            </div>
-
-            <div className="p-8 rounded-3xl border border-white/10 bg-white/[0.03] hover:border-[#6366f1]/50 hover:bg-white/[0.05] transition-all duration-300 hover:-translate-y-1 shadow-xl shadow-black/5">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-3xl mb-4">🚀</div>
-              <h3 className="text-xl font-bold text-white mb-2">One-click deploy</h3>
-              <p className="text-gray-400">
-                Push to Vercel in one click. Get a live URL in under a minute. No config, no servers.
-              </p>
-            </div>
-
-            <div className="p-8 rounded-3xl border border-white/10 bg-white/[0.03] hover:border-[#6366f1]/50 hover:bg-white/[0.05] transition-all duration-300 hover:-translate-y-1 shadow-xl shadow-black/5">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-3xl mb-4">💾</div>
-              <h3 className="text-xl font-bold text-white mb-2">Auto-save & history</h3>
-              <p className="text-gray-400">
-                Every change saved to the cloud. Never lose work. Full project history.
-              </p>
-            </div>
-
-            <div className="p-8 rounded-3xl border border-white/10 bg-white/[0.03] hover:border-[#6366f1]/50 hover:bg-white/[0.05] transition-all duration-300 hover:-translate-y-1 shadow-xl shadow-black/5">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-3xl mb-4">📋</div>
-              <h3 className="text-xl font-bold text-white mb-2">Templates</h3>
-              <p className="text-gray-400">
-                Start from landing pages, dashboards, and SaaS layouts. Customize with AI.
-              </p>
-            </div>
-
-            <div className="p-8 rounded-3xl border border-white/10 bg-white/[0.03] hover:border-[#6366f1]/50 hover:bg-white/[0.05] transition-all duration-300 hover:-translate-y-1 shadow-xl shadow-black/5">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-3xl mb-4">📦</div>
-              <h3 className="text-xl font-bold text-white mb-2">Export anywhere</h3>
-              <p className="text-gray-400">
-                Download as ZIP. Open in VS Code. Deploy anywhere. No lock-in.
-              </p>
-            </div>
+            {[
+              { icon: '👁️', title: 'Real-time preview', desc: 'See your app in the browser instantly. Edit and refresh — no build step. Tailwind-powered preview so designs look exactly right.' },
+              { icon: '🚀', title: 'One-click deploy', desc: 'Push to Vercel in one click. Get a live URL in under a minute. No config, no servers.' },
+              { icon: '💾', title: 'Auto-save & history', desc: 'Every change saved to the cloud. Never lose work. Full project history.' },
+              { icon: '📋', title: 'Templates', desc: 'Start from landing pages, dashboards, and SaaS layouts. Customize with AI.' },
+              { icon: '📦', title: 'Export anywhere', desc: 'Download as ZIP. Open in VS Code. Deploy anywhere. No lock-in.' },
+            ].map((item, i) => (
+              <div
+                key={item.title}
+                className="group p-8 rounded-3xl border-2 border-white/10 bg-white/[0.03] hover:border-indigo-500/30 hover:bg-white/[0.06] hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300"
+                style={{ animationDelay: `${i * 50}ms` }}
+              >
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 border border-white/10 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 group-hover:from-indigo-500/30 group-hover:to-violet-500/30 transition-all duration-300">
+                  {item.icon}
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
+                <p className="text-gray-400 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -472,11 +479,13 @@ export default function LandingPage() {
             <div>
               <h3 className="text-white font-semibold mb-5">Product</h3>
               <ul className="space-y-3 text-sm">
-                <li><a href="#features" className="text-gray-500 hover:text-white hover:underline transition-colors">Features</a></li>
-                <li><a href="#pricing" className="text-gray-500 hover:text-white hover:underline transition-colors">Pricing</a></li>
-                <li><a href="#about" className="text-gray-500 hover:text-white hover:underline transition-colors">About</a></li>
-                <li><a href="#faq" className="text-gray-500 hover:text-white hover:underline transition-colors">FAQ</a></li>
-                <li><a href="#contact" className="text-gray-500 hover:text-white hover:underline transition-colors">Contact</a></li>
+                {navLinks.map(({ href, label }) => (
+                  <li key={href}>
+                    <a href={href} onClick={(e) => scrollToSection(e, href)} className="text-gray-500 hover:text-white hover:underline transition-colors">
+                      {label}
+                    </a>
+                  </li>
+                ))}
                 <li><Link href="/app" className="text-gray-500 hover:text-white hover:underline transition-colors">Get started</Link></li>
               </ul>
             </div>
