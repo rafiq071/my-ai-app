@@ -49,6 +49,9 @@
 </head>
 <body>
   <div id="root"></div>
+  <style>
+    html { scroll-behavior: smooth; }
+  </style>
   <script>
     (function() {
       var rootEl = document.getElementById("root");
@@ -87,7 +90,7 @@
           compiled = compiled.replace(/\bexport\s+var\s+/g, "var ");
           compiled = compiled.replace(/\bexport\s+class\s+/g, "class ");
           compiled = compiled.replace(/export\s*\{[^}]*\}\s*;?/g, "");
-          var globals = "const { useState, useEffect, useRef, useMemo, useCallback, createElement } = React; "
+          var globals = "const { useState, useEffect, useRef, useMemo, useCallback, createElement, Component } = React; "
             + "var Link = function Link(props) { var p = props || {}; var href = p.href || '#'; var rest = {}; for (var k in p) { if (k !== 'href' && k !== 'to') rest[k] = p[k]; } if (p.to && !href) href = p.to; return createElement('a', Object.assign({ href: href }, rest), p.children); }; ";
           var fn = new Function("React", "ReactDOM", "return (function(){ " + globals + compiled + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null); })()");
           var App = fn(window.React, window.ReactDOM);
@@ -95,7 +98,19 @@
             if (!window.__app_root__) {
               window.__app_root__ = ReactDOM.createRoot(document.getElementById("root"));
             }
-            window.__app_root__.render(React.createElement(App));
+            function ErrorBoundary(props) { React.Component.call(this, props); this.state = { error: null }; }
+            ErrorBoundary.prototype = Object.create(React.Component.prototype);
+            ErrorBoundary.prototype.constructor = ErrorBoundary;
+            ErrorBoundary.prototype.getDerivedStateFromError = function(err) { return { error: err }; };
+            ErrorBoundary.prototype.componentDidCatch = function(err, info) { console.error("Preview error", err, info); };
+            ErrorBoundary.prototype.render = function() {
+              if (this.state && this.state.error) {
+                var msg = (this.state.error && this.state.error.message) || String(this.state.error);
+                return React.createElement("div", { style: { padding: "40px", fontFamily: "system-ui", color: "#dc2626", maxWidth: "100%", overflow: "auto" } }, "Preview error (fix your code and click Run again): ", msg);
+              }
+              return this.props.children;
+            };
+            window.__app_root__.render(React.createElement(ErrorBoundary, null, React.createElement(App)));
           } else {
             rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626\">Preview: no default export.</div>";
           }
@@ -103,6 +118,15 @@
           rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626\">Preview error: " + (err.message || String(err)).replace(/</g, "&lt;") + "</div>";
         }
       }
+
+      document.addEventListener("click", function(e) {
+        var a = e.target && e.target.closest && e.target.closest("a[href^=\"#\"]");
+        if (a && a.getAttribute("href").length > 1) {
+          var id = a.getAttribute("href").slice(1);
+          var el = document.getElementById(id);
+          if (el) { e.preventDefault(); el.scrollIntoView({ behavior: "smooth", block: "start" }); }
+        }
+      }, true);
 
       async function loadPreview() {
         try {
