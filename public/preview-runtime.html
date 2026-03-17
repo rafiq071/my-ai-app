@@ -75,6 +75,17 @@
         if (appCode.indexOf("```") === 0) {
           appCode = appCode.replace(/^```(?:tsx|jsx|ts|js)?\s*/i, "").replace(/```\s*$/g, "").trim();
         }
+        // Preprocessing: sanitize common AI generation issues before Babel
+        appCode = appCode
+          .replace(/<<<<<<<[\s\S]*?=======/g, '')
+          .replace(/>>>>>>>[\s\S]*?\n/g, '')
+          .replace(/```[a-z]*\n?/gi, '')
+          .replace(/```/g, '');
+        appCode = appCode.replace(/<<<<<<< [^\n]*[\s\S]*?=======[\s\S]*?>>>>>>>[^\n]*/g, "").trim();
+        if (!appCode || appCode.length === 0) {
+          rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626\">Preview error: Generated app code is empty.</div>";
+          return;
+        }
         appCode = appCode.replace(/import\s+React.*?;/g, "");
         appCode = appCode.replace(/import\s+.*?from\s+['"].*?['"];?/g, "");
         appCode = appCode.replace(/import\s+[\s\S]*?from\s+['"][^'"]*['"]\s*;?/g, "");
@@ -86,6 +97,7 @@
         var iconNames = ["Menu", "Check", "X", "ArrowRight", "ArrowLeft", "Plus", "Minus", "Star", "Search", "User", "Settings", "Home", "Mail", "Phone", "ChevronRight", "ChevronLeft", "ChevronDown", "ChevronUp", "ExternalLink", "Zap", "Shield", "Heart", "MessageCircle", "Calendar", "FileText", "Image", "Download", "Upload", "Trash2", "Edit", "Copy", "Share2"];
         iconNames.forEach(function(name) { if (typeof window[name] === "undefined") window[name] = Icon; });
         try {
+          // Step 2 — Compile with Babel
           var compiled = Babel.transform(appCode, {
             presets: [["react"], ["typescript", { onlyRemoveTypeImports: true }]],
             filename: "App.tsx"
@@ -128,34 +140,34 @@
             + __phAssign + " ";
           var codeToRun = globals + compiled + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null);";
           var App = null;
+          var runCodeError = null;
           function runCode(c) {
             var code = globals + c + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null);";
             var fn = new Function("React", "ReactDOM", "return (function(){ " + code + " })()");
             return fn(window.React, window.ReactDOM);
           }
+          // Step 3 — Safe wrapper execution (preview never crashes)
           try {
             App = runCode(compiled);
-          } catch (parseErr) {
-            if ((parseErr.message || "").indexOf("Unexpected token ')'") !== -1) {
+          } catch (err) {
+            if (err.message && err.message.includes("Unexpected token ')'")) {
               var code = compiled;
-              // 1. Remove duplicate closing parentheses at the end of compiled code
               code = code.replace(/\)\s*\)\s*;?$/, ');');
-              // 2. Fix duplicate statement endings like "); );" or "); )"
               code = code.replace(/\);\s*\);\s*$/, ');');
-              // 3. Fix function endings like "}; );"
               code = code.replace(/\};\s*\);\s*$/, '};');
-              // 4. Remove any extra closing parenthesis at the very end
               code = code.replace(/\)+\s*$/, ')');
               try {
                 App = runCode(code);
-              } catch (e2) {
-                throw parseErr;
+              } catch (e) {
+                runCodeError = e;
               }
             } else {
-              throw parseErr;
+              runCodeError = err;
             }
           }
-          if (App && typeof App === "function") {
+          if (runCodeError) {
+            rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626;max-width:100%;overflow:auto;white-space:pre-wrap\">Preview error: " + (runCodeError.message || String(runCodeError)).replace(/</g, "&lt;").replace(/>/g, "&gt;") + "</div>";
+          } else if (App && typeof App === "function") {
             if (!window.__app_root__) {
               window.__app_root__ = ReactDOM.createRoot(document.getElementById("root"));
             }
@@ -177,7 +189,7 @@
             rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626\">Preview: no default export.</div>";
           }
         } catch (err) {
-          rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626\">Preview error: " + (err.message || String(err)).replace(/</g, "&lt;") + "</div>";
+          rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626;max-width:100%;overflow:auto;white-space:pre-wrap\">Preview error: " + (err.message || String(err)).replace(/</g, "&lt;").replace(/>/g, "&gt;") + "</div>";
         }
       }
 

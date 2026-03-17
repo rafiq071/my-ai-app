@@ -431,12 +431,9 @@ Return STRICT JSON only:
   { "path":"src/components/Showcase.tsx","content":"..." },
   { "path":"src/components/Pricing.tsx","content":"..." },
   { "path":"src/components/Testimonials.tsx","content":"..." },
-<<<<<<< HEAD
   { "path":"src/components/About.tsx","content":"..." },
   { "path":"src/components/Team.tsx","content":"..." },
   { "path":"src/components/FAQ.tsx","content":"..." },
-=======
->>>>>>> b93f28d30c6ebadc07feb02f0ffbb7360bb4ad5c
   { "path":"src/components/CTA.tsx","content":"..." },
   { "path":"src/components/Footer.tsx","content":"..." },
 

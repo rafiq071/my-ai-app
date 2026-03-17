@@ -488,12 +488,9 @@ Return STRICT JSON only:
   { "path":"src/components/Showcase.tsx","content":"..." },
   { "path":"src/components/Pricing.tsx","content":"..." },
   { "path":"src/components/Testimonials.tsx","content":"..." },
-<<<<<<< HEAD
   { "path":"src/components/About.tsx","content":"..." },
   { "path":"src/components/Team.tsx","content":"..." },
   { "path":"src/components/FAQ.tsx","content":"..." },
-=======
->>>>>>> b93f28d30c6ebadc07feb02f0ffbb7360bb4ad5c
   { "path":"src/components/CTA.tsx","content":"..." },
   { "path":"src/components/Footer.tsx","content":"..." },
 
@@ -619,7 +616,6 @@ function extractBalancedJson(str) {
   return null;
 }
 
-<<<<<<< HEAD
 /** Strip markdown code fences from file content (AI sometimes embeds ```tsx in the string). */
 function stripMarkdownFromCode(content) {
   let s = String(content || "").trim();
@@ -633,8 +629,6 @@ function stripMarkdownFromCode(content) {
   return s;
 }
 
-/** Safety parser: strip code fences, trim, extract JSON. */
-=======
 /** STEP 1 — SAFE JSON PARSE */
 function tryParseJSON(text) {
   try {
@@ -645,7 +639,6 @@ function tryParseJSON(text) {
   }
 }
 
->>>>>>> b93f28d30c6ebadc07feb02f0ffbb7360bb4ad5c
 function parseJsonFromAI(raw) {
   let text = String(raw || "");
   let cleaned = text
@@ -730,7 +723,7 @@ export default function About() {
 }`;
 
 /** Default Our Team section — injected when AI omits or stubs it */
-const DEFAULT_TEAM_TSX = \`import React from "react";
+const DEFAULT_TEAM_TSX = `import React from "react";
 const team = [
   { name: "Sarah Chen", role: "CEO & Co-founder", bio: "Former VP at a Fortune 500. Passionate about building products that scale.", img: "https://i.pravatar.cc/160?u=sarah" },
   { name: "Marcus Webb", role: "CTO", bio: "Ex-Google engineer. Loves clean architecture and developer experience.", img: "https://i.pravatar.cc/160?u=marcus" },
@@ -759,7 +752,7 @@ export default function Team() {
 }`;
 
 /** Default FAQ section — advanced accordion design */
-const DEFAULT_FAQ_TSX = \`import React, { useState } from "react";
+const DEFAULT_FAQ_TSX = `import React, { useState } from "react";
 export default function FAQ() {
   const [open, setOpen] = useState(null);
   const items = [
@@ -789,7 +782,7 @@ export default function FAQ() {
       </div>
     </section>
   );
-}\`;
+}`;
 
 /** Default Contact section with form — injected when AI omits or stubs it */
 const DEFAULT_CONTACT_TSX = `import React from "react";
@@ -887,21 +880,6 @@ function ensureAboutFaqContact(allFiles, appContent) {
   return { files, appContent: out };
 }
 
-<<<<<<< HEAD
-/** Strip ./components/ imports and replace component tags so preview works with single-file mount. */
-function sanitizeAppTsx(content) {
-  let out = String(content || "");
-  out = out.replace(/^\s*import\s+[\s\S]*?\s+from\s+['"]\.\.?\/components\/[^'"]+['"]\s*;?\s*$/gm, "");
-  const componentNames = [
-    "Pricing", "FAQ", "ContactForm", "FinalCTA", "Footer", "Hero", "Navbar",
-    "Features", "Testimonials", "ProblemSolution", "CtaSection", "ContactSection", "About", "Team", "Contact",
-  ];
-  for (const name of componentNames) {
-    const openClose = new RegExp(`<${name}[^>]*>[\\s\\S]*?<\\/${name}>`, "g");
-    const open = new RegExp(`<${name}\\s*/?>`, "g");
-    out = out.replace(openClose, `<div key="${name}" style={{ minHeight: 24, margin: '8px 0' }} />`);
-    out = out.replace(open, `<div key="${name}" style={{ minHeight: 24, margin: '8px 0' }} />`);
-=======
 /** STEP 2 — NORMALIZE FILE PATHS */
 function normalizePaths(files) {
   return files.map((f) => {
@@ -930,7 +908,6 @@ function getComponentUsagesInApp(content) {
     if (!ignore.has(name)) {
       found.add(name);
     }
->>>>>>> b93f28d30c6ebadc07feb02f0ffbb7360bb4ad5c
   }
   return [...found];
 }
@@ -1215,41 +1192,7 @@ ${missing.map((x) => `src/components/${x}.tsx`).join("\n")}
         },
       };
     }
-<<<<<<< HEAD
-    if (!parseResult.ok) {
-      throw new Error("AI generation failed. Retrying...");
-    }
-    const parsed = parseResult.parsed;
-    const files = Array.isArray(parsed.files)
-      ? parsed.files
-          .filter((f) => f && (f.path === "src/App.tsx" || f.path === "App.tsx") && typeof f.content === "string")
-          .map((f) => ({
-            path: "src/App.tsx",
-            content: String(f.content),
-            type: "file",
-          }))
-      : [];
-    if (files.length === 0) throw new Error("No updated App.tsx in response");
-    let appContent = String(files[0].content);
-    appContent = stripMarkdownFromCode(appContent);
-    const baseFiles = readBaseTemplate();
-    const mergedFiles = [
-      ...baseFiles,
-      { path: "src/App.tsx", content: appContent, type: "file" },
-    ];
-    console.log("[AI] Modify success");
-    return {
-      success: true,
-      project: {
-        name: String(parsed.name || "app").trim(),
-        description: typeof parsed.description === "string" ? parsed.description : prompt,
-        files: mergedFiles,
-      },
-    };
-=======
-
     throw new Error("Generated project failed validation.");
->>>>>>> b93f28d30c6ebadc07feb02f0ffbb7360bb4ad5c
   }
 
   console.log("[AI] New generation, prompt length:", prompt.length);
@@ -1525,7 +1468,17 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`API server running at http://localhost:${PORT}/api/generate`);
-  if (!OPENAI_API_KEY) console.warn("Generate requests will fail until OPENAI_API_KEY is set in .env");
-});
+function tryListen(port) {
+  server.once("error", (err) => {
+    if (err.code === "EADDRINUSE" && port < 3010) {
+      tryListen(port + 1);
+    } else {
+      throw err;
+    }
+  });
+  server.listen(port, () => {
+    console.log(`API server running at http://localhost:${port}/api/generate`);
+    if (!OPENAI_API_KEY) console.warn("Generate requests will fail until OPENAI_API_KEY is set in .env");
+  });
+}
+tryListen(PORT);
