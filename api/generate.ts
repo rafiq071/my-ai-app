@@ -90,6 +90,39 @@ CORE RULES
 
 ------------------------------------------------
 
+STRICT COMPONENT WHITELIST (CRITICAL)
+
+You are ONLY allowed to use these components in App.tsx:
+
+Navbar
+Hero
+Features
+Showcase
+Pricing
+Testimonials
+CTA
+Footer
+
+App.tsx must NEVER reference any other components.
+
+Do NOT create or reference any additional components (e.g. OurTeam, Stats, FAQ, Gallery, About, Contact, or anything else).
+
+If App.tsx references a component, you MUST include the file in src/components/.
+
+Example: If App.tsx uses <OurTeam /> you MUST return src/components/OurTeam.tsx with full content.
+Never return App.tsx that references a component without including that component file.
+
+All React components must be declared BEFORE export default App.
+
+Correct order:
+1. imports
+2. component declarations
+3. export default App
+
+Never use a component before it is declared.
+
+------------------------------------------------
+
 DESIGN SYSTEM — PREMIUM LOOK (NO PLAIN BLACK ON WHITE)
 
 Avoid flat black text on pure white. Use a premium, modern palette:
@@ -115,6 +148,86 @@ src/components/ui/Section.tsx
 Button: Primary — rounded-xl px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg shadow-indigo-200 transition. Secondary — rounded-xl px-6 py-3 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 transition.
 
 Cards: rounded-2xl border border-gray-200 p-6 bg-white shadow-lg shadow-gray-200/50 transition hover:shadow-xl. Feature cards: same with hover:-translate-y-1.
+
+------------------------------------------------
+
+CRITICAL COMPONENT RULES
+
+UI primitives must NEVER be redefined inside page components.
+
+They must ALWAYS be imported from:
+
+src/components/ui/
+
+Example:
+
+import Button from "./ui/Button"
+import Card from "./ui/Card"
+import Container from "./ui/Container"
+import Section from "./ui/Section"
+
+Page components must NEVER declare:
+
+const Card = ...
+function Card() ...
+
+or any duplicate primitive definitions.
+
+------------------------------------------------
+
+IMPORT ORDER RULE
+
+All imports must appear at the top of the file.
+
+Correct example:
+
+import Container from "./ui/Container"
+import Section from "./ui/Section"
+import Card from "./ui/Card"
+import Button from "./ui/Button"
+
+export default function Features() {
+  return (
+    <Section>
+      <Container>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <Card>...</Card>
+        </div>
+      </Container>
+    </Section>
+  )
+}
+
+------------------------------------------------
+
+STRICT FILE STRUCTURE
+
+Every project must generate these files:
+
+src/components/ui/Button.tsx
+src/components/ui/Card.tsx
+src/components/ui/Container.tsx
+src/components/ui/Section.tsx
+
+These files contain the primitive components.
+
+All other components MUST import them.
+
+------------------------------------------------
+
+PREVENT DUPLICATE DECLARATION
+
+The generator must NEVER create:
+
+const Card =
+function Card(
+export const Card
+
+inside any file except:
+
+src/components/ui/Card.tsx
+
+Same rule for Button, Container, Section.
 
 ------------------------------------------------
 
@@ -266,32 +379,78 @@ Never generate minimal layouts.
 
 OUTPUT FORMAT
 
-CRITICAL: Your response must be ONLY the JSON object. No markdown, no code fences, no explanation before or after. Start your response with { and end with }. Return STRICT JSON only.
+IMPORTANT:
+Every response MUST include src/App.tsx in the files array,
+even when modifying an existing page.
+
+App.tsx must always render the full page layout.
+
+------------------------------------------------
+
+Ensure App.tsx always looks like this:
+
+import Navbar from "./components/Navbar"
+import Hero from "./components/Hero"
+import Features from "./components/Features"
+import Showcase from "./components/Showcase"
+import Pricing from "./components/Pricing"
+import Testimonials from "./components/Testimonials"
+import CTA from "./components/CTA"
+import Footer from "./components/Footer"
+
+export default function App() {
+  return (
+    <div className="bg-gradient-to-b from-gray-50 to-white text-gray-900">
+      <Navbar />
+      <Hero />
+      <Features />
+      <Showcase />
+      <Pricing />
+      <Testimonials />
+      <CTA />
+      <Footer />
+    </div>
+  )
+}
+
+------------------------------------------------
+
+The response MUST always include ALL required files.
+Never return partial updates.
+Never omit src/App.tsx.
+
+Return STRICT JSON only:
 
 {
  "files":[
   { "path":"src/App.tsx","content":"..." },
+
   { "path":"src/components/Navbar.tsx","content":"..." },
   { "path":"src/components/Hero.tsx","content":"..." },
   { "path":"src/components/Features.tsx","content":"..." },
   { "path":"src/components/Showcase.tsx","content":"..." },
   { "path":"src/components/Pricing.tsx","content":"..." },
   { "path":"src/components/Testimonials.tsx","content":"..." },
+<<<<<<< HEAD
   { "path":"src/components/About.tsx","content":"..." },
   { "path":"src/components/Team.tsx","content":"..." },
   { "path":"src/components/FAQ.tsx","content":"..." },
+=======
+>>>>>>> b93f28d30c6ebadc07feb02f0ffbb7360bb4ad5c
   { "path":"src/components/CTA.tsx","content":"..." },
-  { "path":"src/components/Contact.tsx","content":"..." },
   { "path":"src/components/Footer.tsx","content":"..." },
+
   { "path":"src/components/ui/Button.tsx","content":"..." },
   { "path":"src/components/ui/Card.tsx","content":"..." },
   { "path":"src/components/ui/Container.tsx","content":"..." },
   { "path":"src/components/ui/Section.tsx","content":"..." },
+
   { "path":"src/index.css","content":"..." }
  ]
 }
 
 Never output text outside JSON.
+CRITICAL: Your response must be ONLY the JSON object. No markdown, no code fences, no explanation before or after. Start your response with { and end with }.
 Escape quotes and newlines (\\n, \\").
 Response must start with { and end with }.`;
 
@@ -427,7 +586,16 @@ function tryCloseJson(s: string): string {
   return trimmed + suffix;
 }
 
-/** Safety parser: strip code fences, trim, extract JSON, repair, then parse. */
+/** STEP 1 — SAFE JSON PARSE */
+function tryParseJSON(text: string): { ok: boolean; parsed: any } {
+  try {
+    const parsed = JSON.parse(text);
+    return { ok: true, parsed };
+  } catch {
+    return { ok: false, parsed: null };
+  }
+}
+
 function parseJsonFromAI(raw: string): { ok: boolean; parsed?: any } {
   let text = String(raw || "");
   let cleaned = text
@@ -464,6 +632,175 @@ function parseJsonFromAI(raw: string): { ok: boolean; parsed?: any } {
     }
   }
   return { ok: false };
+}
+
+/** STEP 5 — COMPONENT USAGE DETECTION */
+function getComponentUsagesInApp(content: string): string[] {
+  const regex = /<([A-Z][A-Za-z0-9]*)/g;
+  const ignore = new Set(["div", "span", "section", "main", "header", "footer"]);
+  const found = new Set<string>();
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(content)) !== null) {
+    const name = match[1];
+    if (!ignore.has(name)) {
+      found.add(name);
+    }
+  }
+  return [...found];
+}
+
+/** STEP 6 — DETECT MISSING COMPONENT FILES */
+function getMissingComponentFiles(appContent: string, files: { path: string }[]): string[] {
+  const paths = new Set(files.map((f) => f.path));
+  const used = getComponentUsagesInApp(appContent);
+  return used.filter((name) => !paths.has(`src/components/${name}.tsx`));
+}
+
+/** STEP 1 — VALIDATE JSON */
+function validResponse(parsed: any): boolean {
+  return parsed && Array.isArray(parsed.files) && parsed.files.length > 0;
+}
+
+/** STEP 2 — NORMALIZE FILE PATHS */
+function normalizePaths<T extends { path: string }>(files: T[]): T[] {
+  return files.map((f) => {
+    let p = (f.path || "").trim();
+    if (p === "App.tsx") {
+      p = "src/App.tsx";
+    }
+    if (p.startsWith("components/")) {
+      p = "src/" + p;
+    }
+    if (!p.startsWith("src/")) {
+      p = "src/" + p;
+    }
+    return { ...f, path: p };
+  });
+}
+
+/** STEP 8 — FINAL PROJECT VALIDATION */
+function validForPreview(files: { path: string; content?: string }[]): boolean {
+  if (!files || files.length === 0) {
+    return false;
+  }
+  const paths = new Set(files.map((f) => f.path));
+  if (!paths.has("src/App.tsx")) {
+    return false;
+  }
+  const app = files.find((f) => f.path === "src/App.tsx");
+  if (!app || !app.content) {
+    return false;
+  }
+  const missing = getMissingComponentFiles(app.content, files);
+  return missing.length === 0;
+}
+
+/** STEP 10 — SYNTAX VALIDATION BEFORE PREVIEW (skip .tsx/.jsx — they use JSX/imports so new Function() would always fail; preview runtime uses Babel) */
+function isValidTSX(code: string): boolean {
+  try {
+    new Function(code);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function validateSyntaxForPreview(files: { path: string; content?: string }[]): void {
+  for (const f of files) {
+    const path = f.path || "";
+    if (path.endsWith(".tsx") || path.endsWith(".jsx")) {
+      continue;
+    }
+    if (path.endsWith(".ts") || path.endsWith(".js")) {
+      if (!isValidTSX(String(f.content ?? ""))) {
+        throw new Error(`Syntax error detected in ${f.path}`);
+      }
+    }
+  }
+}
+
+const REQUIRED_PATHS = [
+  "src/App.tsx",
+  "src/components/Navbar.tsx",
+  "src/components/Hero.tsx",
+  "src/components/Features.tsx",
+  "src/components/Showcase.tsx",
+  "src/components/Pricing.tsx",
+  "src/components/Testimonials.tsx",
+  "src/components/CTA.tsx",
+  "src/components/Footer.tsx",
+  "src/components/ui/Button.tsx",
+  "src/components/ui/Card.tsx",
+  "src/components/ui/Container.tsx",
+  "src/components/ui/Section.tsx",
+  "src/index.css",
+];
+
+const DEFAULT_APP_STRICT = `import Navbar from "./components/Navbar"
+import Hero from "./components/Hero"
+import Features from "./components/Features"
+import Showcase from "./components/Showcase"
+import Pricing from "./components/Pricing"
+import Testimonials from "./components/Testimonials"
+import CTA from "./components/CTA"
+import Footer from "./components/Footer"
+
+export default function App() {
+  return (
+    <div className="bg-gradient-to-b from-gray-50 to-white text-gray-900">
+      <Navbar />
+      <Hero />
+      <Features />
+      <Showcase />
+      <Pricing />
+      <Testimonials />
+      <CTA />
+      <Footer />
+    </div>
+  )
+}
+`;
+
+const PLACEHOLDER_SECTION = (name: string) =>
+  `import React from "react";\nexport default function ${name}() {\n  return (\n    <section className="py-24"><div className="max-w-6xl mx-auto px-6"><h2 className="text-3xl font-bold">${name}</h2></div></section>\n  );\n}\n`;
+
+const PLACEHOLDER_UI = (name: string) =>
+  `import React from "react";\nexport default function ${name}({ children, className = "" }: { children?: React.ReactNode; className?: string }) {\n  return <div className={className}>{children}</div>;\n}\n`;
+
+/** Ensure the files array contains App.tsx and all required component/ui files. Inject placeholders if missing. */
+function ensureRequiredFiles(
+  files: { path: string; content: string; type?: string }[]
+): { path: string; content: string; type?: string }[] {
+  const byPath = new Map<string, { path: string; content: string; type?: string }>();
+  for (const f of files) {
+    const p = f.path === "App.tsx" ? "src/App.tsx" : f.path;
+    byPath.set(p, { ...f, path: p });
+  }
+  if (!byPath.has("src/App.tsx")) {
+    byPath.set("src/App.tsx", { path: "src/App.tsx", content: DEFAULT_APP_STRICT, type: "file" });
+  }
+  const sectionNames = ["Navbar", "Hero", "Features", "Showcase", "Pricing", "Testimonials", "CTA", "Footer"];
+  for (const name of sectionNames) {
+    const path = `src/components/${name}.tsx`;
+    if (!byPath.has(path)) {
+      byPath.set(path, { path, content: PLACEHOLDER_SECTION(name), type: "file" });
+    }
+  }
+  const uiNames = ["Button", "Card", "Container", "Section"];
+  for (const name of uiNames) {
+    const path = `src/components/ui/${name}.tsx`;
+    if (!byPath.has(path)) {
+      byPath.set(path, { path, content: PLACEHOLDER_UI(name), type: "file" });
+    }
+  }
+  if (!byPath.has("src/index.css")) {
+    byPath.set("src/index.css", {
+      path: "src/index.css",
+      content: "@tailwind base;\n@tailwind components;\n@tailwind utilities;\n",
+      type: "file",
+    });
+  }
+  return Array.from(byPath.values());
 }
 
 function autoFixGeneratedFiles(
@@ -818,16 +1155,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     let raw = completion.choices[0]?.message?.content ?? "";
-    let parseResult = parseJsonFromAI(raw);
-    if (!parseResult.ok || !parseResult.parsed) {
-      const retryMessage =
-        "Return ONLY valid JSON. No markdown code fences, no text before or after. Start with { and end with }. Your previous response could not be parsed.\n\nUser request: " +
-        userMessageForGenerate;
+    let parseResult = tryParseJSON(raw);
+    if (!parseResult.ok || !validResponse(parseResult.parsed)) {
+      const retryMessage = "Return valid JSON with a files array.\n\nUser request: " + userMessageForGenerate;
       const retryCompletion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "system", content: "Output MUST be a single JSON object only. No markdown, no explanations." },
+          { role: "system", content: "Return valid JSON with a files array." },
           { role: "user", content: retryMessage },
         ],
         temperature: 0.3,
@@ -835,14 +1170,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         response_format: { type: "json_object" },
       });
       raw = retryCompletion.choices[0]?.message?.content ?? "";
-      parseResult = parseJsonFromAI(raw);
+      parseResult = tryParseJSON(raw);
     }
-    if (!parseResult.ok || !parseResult.parsed) {
-      return res.status(500).json({
-        error: true,
-        message: "Model did not return valid JSON",
-        raw: raw.slice(0, 500),
-      });
+    if (!parseResult.ok || !parseResult.parsed || !validResponse(parseResult.parsed)) {
+      return res.status(500).json({ error: true, message: "Generated project failed validation." });
     }
 
     const parsed = parseResult.parsed;
@@ -857,20 +1188,72 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             type: (f.type === "directory" ? "directory" : "file") as "file" | "directory",
           }))
       : [];
+    files = normalizePaths(files);
 
     if (files.length === 0) {
-      return res.status(500).json({ error: true, message: "No valid files in response" });
+      return res.status(500).json({ error: true, message: "Generated project failed validation." });
     }
 
     files = autoFixGeneratedFiles(files);
 
-    const appFile = files.find((f: any) => f.path === "src/App.tsx" || f.path === "App.tsx");
-    if (appFile && typeof appFile.content === "string") {
-      const { files: filesWithSections, appContent: patchedApp } = ensureAboutFaqContact(files, appFile.content);
-      files = filesWithSections;
-      const idx = files.findIndex((f: any) => f.path === "src/App.tsx" || f.path === "App.tsx");
-      if (idx !== -1) files[idx] = { ...files[idx], content: patchedApp };
+    // Ensure all required files exist (inject App.tsx or placeholders for missing components/ui/index.css)
+    files = ensureRequiredFiles(files);
+
+    const missingComponentsRetryMessage = (missingList: string[]) =>
+      `App.tsx references missing components.\nYou MUST include these files:\n\n${missingList.map((x) => `src/components/${x}.tsx`).join("\n")}`;
+
+    let attempt = 0;
+    const maxAttempts = 2;
+    while (true) {
+      const appContent = files.find((f: any) => f.path === "src/App.tsx")?.content ?? "";
+      const missing = getMissingComponentFiles(appContent, files);
+      if (missing.length === 0) break;
+      if (attempt >= maxAttempts - 1) {
+        return res.status(500).json({ error: true, message: "Generated project failed validation." });
+      }
+      const retryCompletion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: TEMPLATE_HINT },
+          { role: "user", content: userMessageForGenerate + "\n\n" + missingComponentsRetryMessage(missing) },
+        ],
+        temperature: 0.3,
+        max_tokens: 16000,
+        response_format: { type: "json_object" },
+      });
+      const retryRaw = retryCompletion.choices[0]?.message?.content ?? "";
+      const retryParseResult = tryParseJSON(retryRaw);
+      if (!retryParseResult.ok || !validResponse(retryParseResult.parsed)) {
+        return res.status(500).json({ error: true, message: "Generated project failed validation." });
+      }
+      const retryParsed = retryParseResult.parsed;
+      files = Array.isArray(retryParsed.files)
+        ? retryParsed.files
+            .filter((f: any) => f && typeof f.path === "string" && typeof f.content === "string")
+            .map((f: any) => ({
+              path: String(f.path).trim(),
+              content: String(f.content),
+              type: (f.type === "directory" ? "directory" : "file") as "file" | "directory",
+            }))
+        : [];
+      files = normalizePaths(files);
+      if (files.length === 0) {
+        return res.status(500).json({ error: true, message: "Generated project failed validation." });
+      }
+      files = autoFixGeneratedFiles(files);
+      const idxApp = files.findIndex((f: any) => f.path === "src/App.tsx" || f.path === "App.tsx");
+      if (idxApp !== -1) files[idxApp] = { ...files[idxApp], path: "src/App.tsx" };
+      files = ensureRequiredFiles(files);
+      userMessageForGenerate = userMessageForGenerate + "\n\n" + missingComponentsRetryMessage(missing);
+      attempt++;
     }
+
+    if (!validForPreview(files)) {
+      return res.status(500).json({ error: true, message: "Generated project failed validation." });
+    }
+
+    validateSyntaxForPreview(files);
 
     return res.status(200).json({
       success: true,

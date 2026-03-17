@@ -9,11 +9,6 @@ type FlagRow = {
   updated_at: string
 }
 
-// Small in-memory cache to avoid hammering Supabase on hot endpoints.
-// Safe because flags are for coarse control (kill-switch / beta gating), not precision logic.
-const CACHE_TTL_MS = 30_000
-const cache = new Map<string, { value: boolean; expiresAt: number }>()
-
 function defaultFlagValue(key: FeatureFlagKey): boolean {
   switch (key) {
     case 'deploy_enabled':
@@ -27,15 +22,9 @@ function defaultFlagValue(key: FeatureFlagKey): boolean {
 }
 
 export async function getFeatureFlag(key: FeatureFlagKey): Promise<boolean> {
-  const now = Date.now()
-  const cached = cache.get(key)
-  if (cached && cached.expiresAt > now) return cached.value
-
   const admin = getSupabaseAdmin()
   if (!admin) {
-    const v = defaultFlagValue(key)
-    cache.set(key, { value: v, expiresAt: now + CACHE_TTL_MS })
-    return v
+    return defaultFlagValue(key)
   }
 
   const { data, error } = await admin
@@ -44,15 +33,8 @@ export async function getFeatureFlag(key: FeatureFlagKey): Promise<boolean> {
     .eq('key', key)
     .maybeSingle()
 
-  const v = !error && data ? Boolean((data as FlagRow).enabled) : defaultFlagValue(key)
-  cache.set(key, { value: v, expiresAt: now + CACHE_TTL_MS })
-  return v
+  return !error && data ? Boolean((data as FlagRow).enabled) : defaultFlagValue(key)
 }
 
-export function clearFeatureFlagCache(key?: FeatureFlagKey) {
-  if (!key) {
-    cache.clear()
-    return
-  }
-  cache.delete(key)
-}
+/** No-op after cache removal; kept for API compatibility when toggling flags in admin. */
+export function clearFeatureFlagCache(_key?: FeatureFlagKey) {}

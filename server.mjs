@@ -152,6 +152,34 @@ CORE RULES
 
 ------------------------------------------------
 
+STRICT COMPONENT WHITELIST (CRITICAL)
+
+You are ONLY allowed to use these components in App.tsx:
+
+Navbar
+Hero
+Features
+Showcase
+Pricing
+Testimonials
+CTA
+Footer
+
+App.tsx must NEVER reference any other components.
+
+Do NOT create or reference any additional components (e.g. OurTeam, Stats, FAQ, Gallery, About, Contact, or anything else).
+
+All React components must be declared BEFORE export default App.
+
+Correct order:
+1. imports
+2. component declarations
+3. export default App
+
+Never use a component before it is declared.
+
+------------------------------------------------
+
 DESIGN SYSTEM — PREMIUM LOOK (NO PLAIN BLACK ON WHITE)
 
 Avoid flat black text on pure white. Use a premium, modern palette:
@@ -177,6 +205,86 @@ src/components/ui/Section.tsx
 Button: Primary — rounded-xl px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg shadow-indigo-200 transition. Secondary — rounded-xl px-6 py-3 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 transition.
 
 Cards: rounded-2xl border border-gray-200 p-6 bg-white shadow-lg shadow-gray-200/50 transition hover:shadow-xl. Feature cards: same with hover:-translate-y-1.
+
+------------------------------------------------
+
+CRITICAL COMPONENT RULES
+
+UI primitives must NEVER be redefined inside page components.
+
+They must ALWAYS be imported from:
+
+src/components/ui/
+
+Example:
+
+import Button from "./ui/Button"
+import Card from "./ui/Card"
+import Container from "./ui/Container"
+import Section from "./ui/Section"
+
+Page components must NEVER declare:
+
+const Card = ...
+function Card() ...
+
+or any duplicate primitive definitions.
+
+------------------------------------------------
+
+IMPORT ORDER RULE
+
+All imports must appear at the top of the file.
+
+Correct example:
+
+import Container from "./ui/Container"
+import Section from "./ui/Section"
+import Card from "./ui/Card"
+import Button from "./ui/Button"
+
+export default function Features() {
+  return (
+    <Section>
+      <Container>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <Card>...</Card>
+        </div>
+      </Container>
+    </Section>
+  )
+}
+
+------------------------------------------------
+
+STRICT FILE STRUCTURE
+
+Every project must generate these files:
+
+src/components/ui/Button.tsx
+src/components/ui/Card.tsx
+src/components/ui/Container.tsx
+src/components/ui/Section.tsx
+
+These files contain the primitive components.
+
+All other components MUST import them.
+
+------------------------------------------------
+
+PREVENT DUPLICATE DECLARATION
+
+The generator must NEVER create:
+
+const Card =
+function Card(
+export const Card
+
+inside any file except:
+
+src/components/ui/Card.tsx
+
+Same rule for Button, Container, Section.
 
 ------------------------------------------------
 
@@ -328,32 +436,78 @@ Never generate minimal layouts.
 
 OUTPUT FORMAT
 
-CRITICAL: Your response must be ONLY the JSON object. No markdown, no code fences, no explanation before or after. Start your response with { and end with }. Return STRICT JSON only.
+IMPORTANT:
+Every response MUST include src/App.tsx in the files array,
+even when modifying an existing page.
+
+App.tsx must always render the full page layout.
+
+------------------------------------------------
+
+Ensure App.tsx always looks like this:
+
+import Navbar from "./components/Navbar"
+import Hero from "./components/Hero"
+import Features from "./components/Features"
+import Showcase from "./components/Showcase"
+import Pricing from "./components/Pricing"
+import Testimonials from "./components/Testimonials"
+import CTA from "./components/CTA"
+import Footer from "./components/Footer"
+
+export default function App() {
+  return (
+    <div className="bg-gradient-to-b from-gray-50 to-white text-gray-900">
+      <Navbar />
+      <Hero />
+      <Features />
+      <Showcase />
+      <Pricing />
+      <Testimonials />
+      <CTA />
+      <Footer />
+    </div>
+  )
+}
+
+------------------------------------------------
+
+The response MUST always include ALL required files.
+Never return partial updates.
+Never omit src/App.tsx.
+
+Return STRICT JSON only:
 
 {
  "files":[
   { "path":"src/App.tsx","content":"..." },
+
   { "path":"src/components/Navbar.tsx","content":"..." },
   { "path":"src/components/Hero.tsx","content":"..." },
   { "path":"src/components/Features.tsx","content":"..." },
   { "path":"src/components/Showcase.tsx","content":"..." },
   { "path":"src/components/Pricing.tsx","content":"..." },
   { "path":"src/components/Testimonials.tsx","content":"..." },
+<<<<<<< HEAD
   { "path":"src/components/About.tsx","content":"..." },
   { "path":"src/components/Team.tsx","content":"..." },
   { "path":"src/components/FAQ.tsx","content":"..." },
+=======
+>>>>>>> b93f28d30c6ebadc07feb02f0ffbb7360bb4ad5c
   { "path":"src/components/CTA.tsx","content":"..." },
-  { "path":"src/components/Contact.tsx","content":"..." },
   { "path":"src/components/Footer.tsx","content":"..." },
+
   { "path":"src/components/ui/Button.tsx","content":"..." },
   { "path":"src/components/ui/Card.tsx","content":"..." },
   { "path":"src/components/ui/Container.tsx","content":"..." },
   { "path":"src/components/ui/Section.tsx","content":"..." },
+
   { "path":"src/index.css","content":"..." }
  ]
 }
 
 Never output text outside JSON.
+CRITICAL: Your response must be ONLY the JSON object. No markdown, no code fences, no explanation before or after. Start your response with { and end with }.
 Escape quotes and newlines (\\n, \\").
 Response must start with { and end with }.`;
 
@@ -392,6 +546,11 @@ Export default function App() with everything inlined.`;
 
 const MODIFY_SYSTEM_PROMPT = `You MODIFY existing React/TSX code to fulfill the user's instruction. Do NOT regenerate the whole page. Change ONLY what is needed. Preserve the existing design system (colors, spacing, typography) unless the user asks to change it.
 
+CRITICAL COMPONENT RULES (modify mode):
+- App.tsx may ONLY use these components: Navbar, Hero, Features, Showcase, Pricing, Testimonials, CTA, Footer. Do NOT add or reference any other components (e.g. OurTeam, Stats, FAQ, Gallery, About, Contact). This prevents "X is not defined" in the preview.
+- UI primitives (Card, Button, Container, Section) must NEVER be redefined in any file. They must ALWAYS be imported from src/components/ui/ (e.g. import Card from "./ui/Card"). Never write "const Card = ..." or "function Card()" outside of src/components/ui/Card.tsx. This prevents "Cannot access 'Card' before initialization" in the preview.
+- All imports must appear at the top of each file.
+
 Rules:
 - Keep ALL UI in a single App.tsx. No new component files. No imports from "./components/...".
 - Use inline styles only. No Tailwind, no CSS files.
@@ -405,8 +564,20 @@ Examples of instructions:
 - "Make pricing cards larger" → Increase padding/fontSize on pricing cards.
 - "Add a dark mode toggle" → Add state and a toggle that switches background/text colors.
 
-OUTPUT: Valid JSON. Schema: { "name": "string", "description": "string", "files": [ { "path": "src/App.tsx", "content": "string" } ] }
-Include the FULL content of the modified App.tsx. Escape JSON (\\n, \\").
+Every response MUST include src/App.tsx in the files array. Never return only component files without App.tsx. Never omit src/App.tsx — the preview system requires it every time.
+
+If App.tsx references a component, you MUST include the file in src/components/. Example: If App.tsx uses <OurTeam /> you MUST return src/components/OurTeam.tsx with full content. Never return App.tsx that references a component without including that component file.
+
+Modify mode MUST always return:
+
+- src/App.tsx
+- every modified component file
+- every new component file
+
+Never return partial updates.
+
+OUTPUT: Valid JSON. Schema: { "name": "string", "description": "string", "files": [ { "path": "src/App.tsx", "content": "string" }, { "path": "src/components/ComponentName.tsx", "content": "string" }, ... ] }
+Include the FULL content of the modified src/App.tsx (and any new or modified component files). App.tsx must always render the full page layout. Escape JSON (\\n, \\").
 Return ONLY valid JSON. No markdown, no explanations.`;
 
 function extractJson(text) {
@@ -448,6 +619,7 @@ function extractBalancedJson(str) {
   return null;
 }
 
+<<<<<<< HEAD
 /** Strip markdown code fences from file content (AI sometimes embeds ```tsx in the string). */
 function stripMarkdownFromCode(content) {
   let s = String(content || "").trim();
@@ -462,6 +634,18 @@ function stripMarkdownFromCode(content) {
 }
 
 /** Safety parser: strip code fences, trim, extract JSON. */
+=======
+/** STEP 1 — SAFE JSON PARSE */
+function tryParseJSON(text) {
+  try {
+    const parsed = JSON.parse(text);
+    return { ok: true, parsed };
+  } catch {
+    return { ok: false, parsed: null };
+  }
+}
+
+>>>>>>> b93f28d30c6ebadc07feb02f0ffbb7360bb4ad5c
 function parseJsonFromAI(raw) {
   let text = String(raw || "");
   let cleaned = text
@@ -703,6 +887,7 @@ function ensureAboutFaqContact(allFiles, appContent) {
   return { files, appContent: out };
 }
 
+<<<<<<< HEAD
 /** Strip ./components/ imports and replace component tags so preview works with single-file mount. */
 function sanitizeAppTsx(content) {
   let out = String(content || "");
@@ -716,8 +901,145 @@ function sanitizeAppTsx(content) {
     const open = new RegExp(`<${name}\\s*/?>`, "g");
     out = out.replace(openClose, `<div key="${name}" style={{ minHeight: 24, margin: '8px 0' }} />`);
     out = out.replace(open, `<div key="${name}" style={{ minHeight: 24, margin: '8px 0' }} />`);
+=======
+/** STEP 2 — NORMALIZE FILE PATHS */
+function normalizePaths(files) {
+  return files.map((f) => {
+    let p = (f.path || "").trim();
+    if (p === "App.tsx") {
+      p = "src/App.tsx";
+    }
+    if (p.startsWith("components/")) {
+      p = "src/" + p;
+    }
+    if (!p.startsWith("src/")) {
+      p = "src/" + p;
+    }
+    return { ...f, path: p };
+  });
+}
+
+/** STEP 5 — COMPONENT USAGE DETECTION */
+function getComponentUsagesInApp(content) {
+  const regex = /<([A-Z][A-Za-z0-9]*)/g;
+  const ignore = new Set(["div", "span", "section", "main", "header", "footer"]);
+  const found = new Set();
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    const name = match[1];
+    if (!ignore.has(name)) {
+      found.add(name);
+    }
+>>>>>>> b93f28d30c6ebadc07feb02f0ffbb7360bb4ad5c
   }
-  return out;
+  return [...found];
+}
+
+/** STEP 6 — DETECT MISSING COMPONENT FILES */
+function getMissingComponentFiles(appContent, files) {
+  const paths = new Set(files.map((f) => f.path));
+  const used = getComponentUsagesInApp(appContent);
+  return used.filter((name) => !paths.has(`src/components/${name}.tsx`));
+}
+
+/** STEP 1 — VALIDATE JSON */
+function validResponse(parsed) {
+  return parsed && Array.isArray(parsed.files) && parsed.files.length > 0;
+}
+
+/** STEP 8 — FINAL PROJECT VALIDATION */
+function validForPreview(files) {
+  if (!files || files.length === 0) {
+    return false;
+  }
+  const paths = new Set(files.map((f) => f.path));
+  if (!paths.has("src/App.tsx")) {
+    return false;
+  }
+  const app = files.find((f) => f.path === "src/App.tsx");
+  if (!app || !app.content) {
+    return false;
+  }
+  const missing = getMissingComponentFiles(app.content, files);
+  return missing.length === 0;
+}
+
+/** STEP 10 — SYNTAX VALIDATION BEFORE PREVIEW (skip .tsx/.jsx — they use JSX/imports so new Function() would always fail; preview runtime uses Babel) */
+function isValidTSX(code) {
+  try {
+    new Function(code);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function validateSyntaxForPreview(files) {
+  for (const f of files) {
+    const path = f.path || "";
+    if (path.endsWith(".tsx") || path.endsWith(".jsx")) continue;
+    if (path.endsWith(".ts") || path.endsWith(".js")) {
+      if (!isValidTSX(String(f.content ?? ""))) {
+        throw new Error(`Syntax error detected in ${f.path}`);
+      }
+    }
+  }
+}
+
+const DEFAULT_APP_STRICT = `import Navbar from "./components/Navbar"
+import Hero from "./components/Hero"
+import Features from "./components/Features"
+import Showcase from "./components/Showcase"
+import Pricing from "./components/Pricing"
+import Testimonials from "./components/Testimonials"
+import CTA from "./components/CTA"
+import Footer from "./components/Footer"
+
+export default function App() {
+  return (
+    <div className="bg-gradient-to-b from-gray-50 to-white text-gray-900">
+      <Navbar />
+      <Hero />
+      <Features />
+      <Showcase />
+      <Pricing />
+      <Testimonials />
+      <CTA />
+      <Footer />
+    </div>
+  )
+}
+`;
+
+function placeholderSection(name) {
+  return `import React from "react";\nexport default function ${name}() {\n  return (\n    <section className="py-24"><div className="max-w-6xl mx-auto px-6"><h2 className="text-3xl font-bold">${name}</h2></div></section>\n  );\n}\n`;
+}
+function placeholderUi(name) {
+  return `import React from "react";\nexport default function ${name}({ children, className = "" }) {\n  return <div className={className}>{children}</div>;\n}\n`;
+}
+
+/** Ensure the files array contains App.tsx and all required component/ui files. Inject placeholders if missing. */
+function ensureRequiredFilesServer(files) {
+  const byPath = new Map();
+  for (const f of files) {
+    const p = f.path === "App.tsx" ? "src/App.tsx" : f.path;
+    byPath.set(p, { ...f, path: p });
+  }
+  if (!byPath.has("src/App.tsx")) {
+    byPath.set("src/App.tsx", { path: "src/App.tsx", content: DEFAULT_APP_STRICT, type: "file" });
+  }
+  ["Navbar", "Hero", "Features", "Showcase", "Pricing", "Testimonials", "CTA", "Footer"].forEach((name) => {
+    const path = `src/components/${name}.tsx`;
+    if (!byPath.has(path)) byPath.set(path, { path, content: placeholderSection(name), type: "file" });
+  });
+  ["Button", "Card", "Container", "Section"].forEach((name) => {
+    const path = `src/components/ui/${name}.tsx`;
+    if (!byPath.has(path)) byPath.set(path, { path, content: placeholderUi(name), type: "file" });
+  });
+  if (!byPath.has("src/index.css")) {
+    byPath.set("src/index.css", { path: "src/index.css", content: "@tailwind base;\n@tailwind components;\n@tailwind utilities;\n", type: "file" });
+  }
+  return Array.from(byPath.values());
 }
 
 /** Stage 3: Auto-fix generated files — ensure export default, add React imports, remove invalid imports. */
@@ -802,41 +1124,98 @@ async function handleGenerate(body) {
     if (!appFile || typeof appFile.content !== "string") {
       throw new Error("Modify mode requires existing src/App.tsx content. Open a project with a generated landing page first.");
     }
-    const userMessage = `User instruction: ${prompt}\n\nExisting src/App.tsx:\n\`\`\`tsx\n${appFile.content}\n\`\`\`\n\nReturn the full updated App.tsx as JSON in the "files" array. Only include the modified src/App.tsx.`;
+    const userMessage = `User instruction: ${prompt}\n\nExisting src/App.tsx:\n\`\`\`tsx\n${appFile.content}\n\`\`\`\n\nReturn the full updated App.tsx in the "files" array. If you add new sections (e.g. OurTeam, FAQ), include src/components/OurTeam.tsx etc. with full content. Always include src/App.tsx.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: MODIFY_SYSTEM_PROMPT },
-        { role: "user", content: userMessage },
-      ],
-      temperature: 0.2,
-      max_tokens: 8000,
-    });
+    let lastParseResult = null;
+    let lastParsed = null;
+    let lastText = "";
 
-    const text =
-      completion.output_text ??
-      completion.output?.[0]?.content?.[0]?.text ??
-      completion.choices?.[0]?.message?.content ??
-      "";
-    let parseResult = parseJsonFromAI(String(text));
-    if (!parseResult.ok) {
-      const repairCompletion = await openai.chat.completions.create({
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: MODIFY_SYSTEM_PROMPT },
-          { role: "user", content: "Return ONLY valid JSON, no markdown. Previous response was invalid. Try again:\n\n" + userMessage },
+          { role: "user", content: attempt === 0 ? userMessage : (lastParseResult?.retryMessage || userMessage) },
         ],
         temperature: 0.2,
-        max_tokens: 8000,
+        max_tokens: 12000,
       });
-      const retryText =
-        repairCompletion.output_text ??
-        repairCompletion.output?.[0]?.content?.[0]?.text ??
-        repairCompletion.choices?.[0]?.message?.content ??
+
+      const text =
+        completion.output_text ??
+        completion.output?.[0]?.content?.[0]?.text ??
+        completion.choices?.[0]?.message?.content ??
         "";
-      parseResult = parseJsonFromAI(String(retryText));
+      lastText = String(text);
+      let parseResult = tryParseJSON(lastText);
+
+      if (!parseResult.ok || !validResponse(parseResult.parsed)) {
+        lastParseResult = { retryMessage: "Return valid JSON with a files array.\n\n" + userMessage };
+        continue;
+      }
+      const parsed = parseResult.parsed;
+
+      const rawFiles = parsed.files
+        .filter((f) => f && typeof f.path === "string" && typeof f.content === "string")
+        .map((f) => ({ path: String(f.path).trim(), content: String(f.content), type: "file" }));
+      const normalizedFiles = normalizePaths(rawFiles);
+
+      if (!normalizedFiles.some((f) => f.path === "src/App.tsx")) {
+        lastParseResult = { retryMessage: "You MUST include src/App.tsx when modifying the project.\n\n" + userMessage };
+        continue;
+      }
+
+      const appEntry = normalizedFiles.find((f) => f.path === "src/App.tsx");
+      const appContentSoFar = appEntry ? String(appEntry.content || "") : "";
+
+      // SAFE FILE MERGE: mergedFiles = { ...existingSrcFiles, ...responseFiles }. Existing preserved, response overwrite by path. Never delete unless replaced.
+      const pathToContent = new Map();
+      existingFiles.filter((f) => f.path && f.path.startsWith("src/")).forEach((f) => pathToContent.set(f.path === "App.tsx" ? "src/App.tsx" : f.path, f.content));
+      normalizedFiles.forEach((f) => pathToContent.set(f.path, f.content));
+
+      const mergedFileList = Array.from(pathToContent.entries()).map(([path, content]) => ({ path, content, type: "file" }));
+      const missing = getMissingComponentFiles(appContentSoFar, mergedFileList);
+      if (missing.length > 0) {
+        lastParseResult = {
+          retryMessage: userMessage + `
+
+App.tsx references missing components.
+You MUST include these files:
+
+${missing.map((x) => `src/components/${x}.tsx`).join("\n")}
+`,
+        };
+        continue;
+      }
+      // 6. RETRY IF COMPONENTS MISSING — enforced above
+
+      pathToContent.set("src/App.tsx", appContentSoFar);
+
+      const baseFiles = readBaseTemplate();
+      const basePaths = new Set(baseFiles.map((f) => f.path));
+      const mergedFiles = baseFiles.map((f) => {
+        const content = pathToContent.get(f.path);
+        return content !== undefined ? { path: f.path, content, type: "file" } : f;
+      });
+      for (const [path, content] of pathToContent) {
+        if (!basePaths.has(path)) mergedFiles.push({ path, content, type: "file" });
+      }
+      if (!validForPreview(mergedFiles)) {
+        lastParseResult = { retryMessage: userMessage + "\n\nGenerated project failed validation. Ensure src/App.tsx and all referenced component files are included." };
+        continue;
+      }
+      validateSyntaxForPreview(mergedFiles);
+      console.log("[AI] Modify success");
+      return {
+        success: true,
+        project: {
+          name: String(parsed.name || "app").trim(),
+          description: typeof parsed.description === "string" ? parsed.description : prompt,
+          files: mergedFiles,
+        },
+      };
     }
+<<<<<<< HEAD
     if (!parseResult.ok) {
       throw new Error("AI generation failed. Retrying...");
     }
@@ -867,6 +1246,10 @@ async function handleGenerate(body) {
         files: mergedFiles,
       },
     };
+=======
+
+    throw new Error("Generated project failed validation.");
+>>>>>>> b93f28d30c6ebadc07feb02f0ffbb7360bb4ad5c
   }
 
   console.log("[AI] New generation, prompt length:", prompt.length);
@@ -920,14 +1303,14 @@ async function handleGenerate(body) {
     "";
 
   const raw = String(text);
-  let parseResult = parseJsonFromAI(raw);
-  if (!parseResult.ok) {
+  let parseResult = tryParseJSON(raw);
+  if (!parseResult.ok || !validResponse(parseResult.parsed)) {
     const repairCompletion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "system", content: TEMPLATE_HINT },
-        { role: "user", content: "Return ONLY valid JSON. Do not include explanations or markdown. Previous response was invalid. Try again:\n\n" + prompt + context },
+        { role: "user", content: "Return valid JSON with a files array.\n\n" + prompt + context },
       ],
       temperature: 0.3,
       max_tokens: 6000,
@@ -937,18 +1320,17 @@ async function handleGenerate(body) {
       repairCompletion.output?.[0]?.content?.[0]?.text ??
       repairCompletion.choices?.[0]?.message?.content ??
       "";
-    parseResult = parseJsonFromAI(String(retryText));
+    parseResult = tryParseJSON(String(retryText));
   }
-  if (!parseResult.ok) {
-    throw new Error("AI generation failed. Retrying...");
+  if (!parseResult.ok || !parseResult.parsed || !validResponse(parseResult.parsed)) {
+    throw new Error("Generated project failed validation.");
   }
   const parsed = parseResult.parsed;
 
   const name = String(parsed.name || "app").trim();
   const description = typeof parsed.description === "string" ? parsed.description : prompt;
-  let allFiles = Array.isArray(parsed.files)
-    ? parsed.files.filter((f) => f && typeof f.path === "string" && typeof f.content === "string")
-    : [];
+  let allFiles = parsed.files.filter((f) => f && typeof f.path === "string" && typeof f.content === "string");
+  allFiles = normalizePaths(allFiles);
 
   if (!hasAppTsx(parsed)) {
     const appTsxRetryPrompt = "You must include src/App.tsx in the response. Return valid JSON only. No markdown.\n\nOriginal prompt: " + prompt + context;
@@ -969,7 +1351,7 @@ async function handleGenerate(body) {
       "";
     const retryResult = parseJsonFromAI(String(retryText));
     if (retryResult.ok && Array.isArray(retryResult.parsed.files)) {
-      allFiles = retryResult.parsed.files.filter((f) => f && typeof f.path === "string" && typeof f.content === "string");
+      allFiles = normalizePaths(retryResult.parsed.files.filter((f) => f && typeof f.path === "string" && typeof f.content === "string"));
     }
   }
 
@@ -979,22 +1361,86 @@ async function handleGenerate(body) {
   let appFile = allFiles.find(
     (f) => f.path === "src/App.tsx" || f.path === "App.tsx"
   );
+  allFiles = ensureRequiredFilesServer(allFiles);
+  appFile = allFiles.find((f) => f.path === "src/App.tsx" || f.path === "App.tsx");
   if (!appFile || typeof appFile.content !== "string") {
     throw new Error("No src/App.tsx in response.");
   }
+  const appContentForValidation = String(appFile.content);
 
-  const { files: filesWithAboutFaqContact, appContent: appContentWithSections } = ensureAboutFaqContact(allFiles, appFile.content);
-  allFiles = filesWithAboutFaqContact;
-  appFile = { ...appFile, content: appContentWithSections };
-
-  const hasComponents = allFiles.some((f) => f.path && f.path.startsWith("src/components/"));
-  const sanitizedAppContent = hasComponents ? appFile.content : sanitizeAppTsx(appFile.content);
+  const missing = getMissingComponentFiles(appContentForValidation, allFiles);
+  if (missing.length > 0) {
+    const missingFilesMessage = `App.tsx references missing components.\nYou MUST include these files:\n\n${missing.map((x) => `src/components/${x}.tsx`).join("\n")}`;
+    const retryCompletion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: TEMPLATE_HINT },
+        { role: "user", content: userMessageForGenerate + "\n\n" + missingFilesMessage },
+      ],
+      temperature: 0.3,
+      max_tokens: 16000,
+    });
+    const retryText =
+      retryCompletion.output_text ??
+      retryCompletion.output?.[0]?.content?.[0]?.text ??
+      retryCompletion.choices?.[0]?.message?.content ??
+      "";
+    const retryParseResult = tryParseJSON(String(retryText));
+    if (retryParseResult.ok && retryParseResult.parsed && validResponse(retryParseResult.parsed)) {
+      allFiles = retryParseResult.parsed.files.filter((f) => f && typeof f.path === "string" && typeof f.content === "string");
+      allFiles = normalizePaths(allFiles);
+      allFiles = ensureAppTsxInFiles(allFiles);
+      allFiles = autoFixGeneratedFiles(allFiles);
+      allFiles = ensureRequiredFilesServer(allFiles);
+      appFile = allFiles.find((f) => f.path === "src/App.tsx" || f.path === "App.tsx");
+      if (appFile && typeof appFile.content === "string") {
+        const retryAppContent = String(appFile.content);
+        const retryMissing = getMissingComponentFiles(retryAppContent, allFiles);
+        if (retryMissing.length === 0) {
+          allFiles = allFiles.map((f) => {
+            const p = f.path === "App.tsx" ? "src/App.tsx" : f.path;
+            const content = p === "src/App.tsx" ? retryAppContent : String(f.content);
+            return { path: p, content, type: "file" };
+          });
+          const baseFiles = readBaseTemplate();
+          const basePaths = new Set(baseFiles.map((f) => f.path));
+          const aiOverrides = new Map(allFiles.map((f) => {
+            const path = f.path === "App.tsx" ? "src/App.tsx" : f.path;
+            const content = path === "src/App.tsx" ? retryAppContent : String(f.content);
+            return [path, { path, content, type: "file" }];
+          }));
+          const merged = baseFiles.map((f) => {
+            const over = aiOverrides.get(f.path);
+            return over ? { path: f.path, content: over.content, type: "file" } : f;
+          });
+          const extra = allFiles
+            .filter((f) => {
+              const p = f.path === "App.tsx" ? "src/App.tsx" : f.path;
+              return !basePaths.has(p) && p.startsWith("src/");
+            })
+            .map((f) => {
+              const p = f.path === "App.tsx" ? "src/App.tsx" : f.path;
+              const content = p === "src/App.tsx" ? retryAppContent : String(f.content);
+              return { path: p, content, type: "file" };
+            });
+          const files = [...merged, ...extra];
+          if (validForPreview(files)) {
+            validateSyntaxForPreview(files);
+            console.log("[AI] Generation success (after missing-components retry), files:", files.map((f) => f.path).join(", "));
+            return { success: true, project: { name, description, files } };
+          }
+        }
+      }
+    }
+    throw new Error("Generated project failed validation.");
+  }
 
   const baseFiles = readBaseTemplate();
   const basePaths = new Set(baseFiles.map((f) => f.path));
   const aiOverrides = new Map(allFiles.map((f) => {
     const path = f.path === "App.tsx" ? "src/App.tsx" : f.path;
-    const content = (path === "src/App.tsx" ? sanitizedAppContent : String(f.content));
+    const content = (path === "src/App.tsx" ? appContentForValidation : String(f.content));
     return [path, { path, content, type: "file" }];
   }));
   const merged = baseFiles.map((f) => {
@@ -1008,11 +1454,15 @@ async function handleGenerate(body) {
     })
     .map((f) => {
       const p = f.path === "App.tsx" ? "src/App.tsx" : f.path;
-      const content = p === "src/App.tsx" ? sanitizedAppContent : String(f.content);
+      const content = p === "src/App.tsx" ? appContentForValidation : String(f.content);
       return { path: p, content, type: "file" };
     });
   const files = [...merged, ...extra];
 
+  if (!validForPreview(files)) {
+    throw new Error("Generated project failed validation.");
+  }
+  validateSyntaxForPreview(files);
   console.log("[AI] Generation success, files:", files.map((f) => f.path).join(", "));
   return { success: true, project: { name, description, files } };
 }

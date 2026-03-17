@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Preview</title>
+  <script>
+    (function(){ var w = console.warn; console.warn = function(m) { if (typeof m === 'string' && m.indexOf('cdn.tailwindcss.com') !== -1) return; return w.apply(console, arguments); }; })();
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -49,6 +52,9 @@
 </head>
 <body>
   <div id="root"></div>
+  <style>
+    html { scroll-behavior: smooth; }
+  </style>
   <script>
     (function() {
       var rootEl = document.getElementById("root");
@@ -90,15 +96,65 @@
           compiled = compiled.replace(/\bexport\s+var\s+/g, "var ");
           compiled = compiled.replace(/\bexport\s+class\s+/g, "class ");
           compiled = compiled.replace(/export\s*\{[^}]*\}\s*;?/g, "");
-          var globals = "const { useState, useEffect, useRef, useMemo, useCallback, createElement } = React; "
-            + "var Link = function Link(props) { var p = props || {}; var href = p.href || '#'; var rest = {}; for (var k in p) { if (k !== 'href' && k !== 'to') rest[k] = p[k]; } if (p.to && !href) href = p.to; return createElement('a', Object.assign({ href: href }, rest), p.children); }; ";
-          var fn = new Function("React", "ReactDOM", "return (function(){ " + globals + compiled + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null); })()");
-          var App = fn(window.React, window.ReactDOM);
+          compiled = compiled.trim();
+          if (compiled.length > 0 && !/;\s*$/.test(compiled)) compiled = compiled + ";";
+          var componentNames = ["Navbar","Hero","Features","Testimonials","Pricing","CTA","Footer","About","FAQ","Contact","OurTeam","ContactSection","FinalCTA","Showcase","ProblemSolution","Card","Button","Container","Section"];
+          var isConsolidated = /\bfunction\s+(Navbar|Hero|Features)\s*\(/.test(compiled);
+          if (!isConsolidated) {
+            componentNames.sort(function(a, b) { return b.length - a.length; });
+            componentNames.forEach(function(n) {
+              var esc = n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              var fallback = "(typeof " + n + " !== 'undefined' ? " + n + " : __ph[" + JSON.stringify(n) + "])";
+              var reactWithComma = new RegExp("React\\.createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*,", "g");
+              compiled = compiled.replace(reactWithComma, "React.createElement(" + fallback + ",");
+              var reactNoComma = new RegExp("React\\.createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*\\)", "g");
+              compiled = compiled.replace(reactNoComma, "React.createElement(" + fallback + ")");
+            });
+          }
+          var __phAssign = "var __ph = { " + componentNames.map(function(n) { return n + ": Placeholder('" + n + "')"; }).join(", ") + " }; ";
+          var globals = "const { useState, useEffect, useRef, useMemo, useCallback, createElement, Component } = React; "
+            + "var Link = function Link(props) { var p = props || {}; var href = p.href || '#'; var rest = {}; for (var k in p) { if (k !== 'href' && k !== 'to' && k !== 'smooth') rest[k] = p[k]; } if (p.to && !p.href) href = p.to; return createElement('a', Object.assign({ href: href }, rest), p.children); }; "
+            + "var Placeholder = function(name) { return function(props) { return createElement('div', { style: { padding: '12px 16px', border: '1px dashed #e2e8f0', borderRadius: '8px', margin: '8px 0', fontSize: '14px', color: '#64748b', minHeight: '24px' } }, name); }; "
+            + __phAssign + " ";
+          var codeToRun = globals + compiled + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null);";
+          var App = null;
+          function runCode(c) {
+            var code = globals + c + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null);";
+            var fn = new Function("React", "ReactDOM", "return (function(){ " + code + " })()");
+            return fn(window.React, window.ReactDOM);
+          }
+          try {
+            App = runCode(compiled);
+          } catch (parseErr) {
+            if ((parseErr.message || "").indexOf("Unexpected token ')'") !== -1) {
+              var fixed = compiled.replace(/\s*\)\s*\)\s*\;?\s*$/, ");");
+              if (fixed !== compiled) {
+                try { App = runCode(fixed); } catch (e2) { throw parseErr; }
+              } else {
+                throw parseErr;
+              }
+            } else {
+              throw parseErr;
+            }
+          }
           if (App && typeof App === "function") {
             if (!window.__app_root__) {
               window.__app_root__ = ReactDOM.createRoot(document.getElementById("root"));
             }
-            window.__app_root__.render(React.createElement(App));
+            function ErrorBoundary(props) { React.Component.call(this, props); this.state = { error: null }; }
+            ErrorBoundary.prototype = Object.create(React.Component.prototype);
+            ErrorBoundary.prototype.constructor = ErrorBoundary;
+            if (ErrorBoundary.prototype.getDerivedStateFromError) delete ErrorBoundary.prototype.getDerivedStateFromError;
+            ErrorBoundary.getDerivedStateFromError = function(err) { return { error: err }; };
+            ErrorBoundary.prototype.componentDidCatch = function(err, info) { console.error("Preview error", err, info); };
+            ErrorBoundary.prototype.render = function() {
+              if (this.state && this.state.error) {
+                var msg = (this.state.error && this.state.error.message) || String(this.state.error);
+                return React.createElement("div", { style: { padding: "40px", fontFamily: "system-ui", color: "#dc2626", maxWidth: "100%", overflow: "auto" } }, "Preview error (fix your code and click Run again): ", msg);
+              }
+              return this.props.children;
+            };
+            window.__app_root__.render(React.createElement(ErrorBoundary, null, React.createElement(App)));
           } else {
             rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626\">Preview: no default export.</div>";
           }
@@ -106,6 +162,15 @@
           rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626\">Preview error: " + (err.message || String(err)).replace(/</g, "&lt;") + "</div>";
         }
       }
+
+      document.addEventListener("click", function(e) {
+        var a = e.target && e.target.closest && e.target.closest("a[href^=\"#\"]");
+        if (a && a.getAttribute("href").length > 1) {
+          var id = a.getAttribute("href").slice(1);
+          var el = document.getElementById(id);
+          if (el) { e.preventDefault(); el.scrollIntoView({ behavior: "smooth", block: "start" }); }
+        }
+      }, true);
 
       async function loadPreview() {
         try {
