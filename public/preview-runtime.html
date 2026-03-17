@@ -66,6 +66,9 @@
           return;
         }
         var appCode = (appFile.content || "").trim();
+        if (appCode.indexOf("```") === 0) {
+          appCode = appCode.replace(/^```(?:tsx|jsx|ts|js)?\s*/i, "").replace(/```\s*$/g, "").trim();
+        }
         appCode = appCode.replace(/import\s+React.*?;/g, "");
         appCode = appCode.replace(/import\s+.*?from\s+['"].*?['"];?/g, "");
         appCode = appCode.replace(/import\s+[\s\S]*?from\s+['"][^'"]*['"]\s*;?/g, "");

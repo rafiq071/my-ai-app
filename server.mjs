@@ -132,9 +132,9 @@ NAVBAR — WORKING LINKS (CRITICAL)
 
 All navigation links and the header CTA MUST work. Use anchor links that scroll to sections.
 
-• Nav links: Use <a href="#features">Features</a>, <a href="#pricing">Pricing</a>, <a href="#about">About</a>, <a href="#faq">FAQ</a>, <a href="#contact">Contact</a>. Do NOT use <button> for nav items or empty href="#".
+• Nav links: Use <a href="#features">Features</a>, <a href="#pricing">Pricing</a>, <a href="#about">About</a>, <a href="#team">Team</a>, <a href="#faq">FAQ</a>, <a href="#contact">Contact</a>. Do NOT use <button> for nav items or empty href="#".
 • Header CTA button: Use <a href="#contact">Get Started</a> or <a href="#pricing">View Pricing</a> (real link that scrolls). Never a button with no onClick/href.
-• Every section wrapper in the page MUST have the matching id so links work: <section id="features">, <section id="pricing">, <section id="about">, <section id="faq">, <section id="contact">. Add these ids to the outer element of each section.
+• Every section wrapper in the page MUST have the matching id so links work: <section id="features">, <section id="pricing">, <section id="about">, <section id="team">, <section id="faq">, <section id="contact">. Add these ids to the outer element of each section.
 • When mapping over children or any array prop (e.g. in Card, feature lists), always guard: use (children || []).map(...) or (items || []).map(...) so the preview never hits "Cannot read properties of undefined (reading 'map')".
 
 ------------------------------------------------
@@ -189,6 +189,7 @@ src/components/Showcase.tsx
 src/components/Pricing.tsx
 src/components/Testimonials.tsx
 src/components/About.tsx
+src/components/Team.tsx
 src/components/FAQ.tsx
 src/components/CTA.tsx
 src/components/Contact.tsx
@@ -205,6 +206,7 @@ Showcase
 Pricing (id="pricing")
 Testimonials
 About (id="about")
+Team (id="team")
 FAQ (id="faq")
 CTA
 Contact (id="contact")
@@ -266,15 +268,21 @@ Each card: avatar (use <img src="https://i.pravatar.cc/100?u=1" alt="" className
 
 ------------------------------------------------
 
-ABOUT US SECTION (MANDATORY)
+ABOUT US SECTION (MANDATORY — ATTRACTIVE)
 
-Section with id="about". Headline e.g. "About Us" or "Who We Are". Include at least one real photo: use <img> with a working URL (e.g. https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80 for team, or https://picsum.photos/800/500) in a two-column layout — image on one side, company mission/story (2–3 short paragraphs) and optional values on the other. Real-sounding copy that matches the product. Rounded-2xl cards or clean grid. No placeholder text.
+Section with id="about". Headline "About Us" or "Who We Are". MUST include at least one high-quality photo: <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80" alt="Team" className="rounded-2xl w-full object-cover shadow-xl" /> in a two-column layout. Other side: mission headline, 2–3 paragraphs, value badges (rounded-xl bg-indigo-50 text-indigo-700). Optional: stats overlay (e.g. "10+ Years" "500+ Clients"). Use bg-gradient-to-b from-slate-50 to-white. No placeholder text.
 
 ------------------------------------------------
 
-FAQ SECTION (MANDATORY — BETTER QUALITY)
+OUR TEAM SECTION (MANDATORY)
 
-Section with id="faq". Headline "Frequently Asked Questions". 5–7 Q&A pairs. Use <details> and <summary> for accordion (click to expand), or useState to toggle open/closed. Each question: clear, specific (e.g. "How do I get started?", "What payment methods do you accept?"). Each answer: 2–3 sentences, helpful and specific to the product. Style: rounded-xl cards, border, padding. No "Question 1" / "Answer 1" placeholders.
+Section with id="team". Headline "Our Team" or "Meet the Team". Grid of 4 team members (grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8). Each card: rounded-2xl border border-slate-200 bg-white p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition; avatar <img src="https://i.pravatar.cc/160?u=NAME" className="rounded-full w-20 h-20 mx-auto mb-4 object-cover" />; name (font-bold); role (text-indigo-600); one-line bio. Realistic names and roles (CEO, CTO, Head of Product, Head of Design). Section: py-24 px-6 bg-white or bg-slate-50/50.
+
+------------------------------------------------
+
+FAQ SECTION (MANDATORY — ADVANCED DESIGN)
+
+Section with id="faq". Headline "Frequently Asked Questions" with subtitle. 5–7 Q&A pairs. Use useState accordion. Each item: rounded-2xl border bg-white shadow-sm hover:shadow-md; border-l-4 border-indigo-500 when open; question row with toggle icon; answer with border-t. Max-w-4xl mx-auto. Section: py-24 bg-gradient-to-b from-white to-slate-50/50. End with "Can't find an answer? <a href="#contact">Contact us</a>." No "Question 1" placeholders.
 
 ------------------------------------------------
 
@@ -332,6 +340,7 @@ CRITICAL: Your response must be ONLY the JSON object. No markdown, no code fence
   { "path":"src/components/Pricing.tsx","content":"..." },
   { "path":"src/components/Testimonials.tsx","content":"..." },
   { "path":"src/components/About.tsx","content":"..." },
+  { "path":"src/components/Team.tsx","content":"..." },
   { "path":"src/components/FAQ.tsx","content":"..." },
   { "path":"src/components/CTA.tsx","content":"..." },
   { "path":"src/components/Contact.tsx","content":"..." },
@@ -439,6 +448,19 @@ function extractBalancedJson(str) {
   return null;
 }
 
+/** Strip markdown code fences from file content (AI sometimes embeds ```tsx in the string). */
+function stripMarkdownFromCode(content) {
+  let s = String(content || "").trim();
+  const tsxMatch = s.match(/^```(?:tsx|jsx|ts|js)?\s*([\s\S]*?)```\s*$/);
+  if (tsxMatch && tsxMatch[1]) return tsxMatch[1].trim();
+  const anyMatch = s.match(/^```\s*([\s\S]*?)```\s*$/);
+  if (anyMatch && anyMatch[1]) return anyMatch[1].trim();
+  if (s.startsWith("```")) {
+    s = s.replace(/^```(?:tsx|jsx|ts|js)?\s*/i, "").replace(/```\s*$/, "").trim();
+  }
+  return s;
+}
+
 /** Safety parser: strip code fences, trim, extract JSON. */
 function parseJsonFromAI(raw) {
   let text = String(raw || "");
@@ -499,21 +521,22 @@ export default function About() {
   return (
     <section id="about" className="py-24 px-6 bg-gradient-to-b from-slate-50 to-white">
       <div className="max-w-6xl mx-auto">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div>
-            <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80" alt="Team" className="rounded-2xl w-full object-cover shadow-xl" />
+        <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="relative">
+            <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80" alt="Our team" className="rounded-2xl w-full object-cover shadow-xl" />
+            <div className="absolute -bottom-4 -right-4 rounded-2xl bg-white shadow-xl border border-slate-100 px-6 py-4 flex gap-8">
+              <div><div className="text-2xl font-bold text-indigo-600">10+</div><div className="text-sm text-slate-600">Years</div></div>
+              <div><div className="text-2xl font-bold text-indigo-600">500+</div><div className="text-sm text-slate-600">Clients</div></div>
+            </div>
           </div>
           <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">About Us</h2>
-            <p className="text-lg text-slate-600 max-w-2xl mb-6">
-              We help businesses grow with modern tools and expert support. Our mission is to deliver real value through quality products and outstanding service.
-            </p>
-            <p className="text-lg text-slate-600 max-w-2xl mb-8">
-              Founded with a focus on simplicity and results, we work with teams of all sizes to achieve their goals. Get in touch to learn how we can help you.
-            </p>
-            <div className="flex flex-wrap gap-6">
-              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-indigo-50 text-indigo-700 font-semibold">Quality first</div>
-              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-violet-50 text-violet-700 font-semibold">Customer focused</div>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">About Us</h2>
+            <p className="text-lg text-slate-600 max-w-xl mb-4">We help businesses grow with modern tools and expert support. Our mission is to deliver real value through quality products and outstanding service.</p>
+            <p className="text-lg text-slate-600 max-w-xl mb-8">Founded with a focus on simplicity and results, we work with teams of all sizes to achieve their goals. Get in touch to learn how we can help you.</p>
+            <div className="flex flex-wrap gap-3">
+              <span className="px-4 py-2 rounded-xl bg-indigo-50 text-indigo-700 font-semibold text-sm">Quality first</span>
+              <span className="px-4 py-2 rounded-xl bg-violet-50 text-violet-700 font-semibold text-sm">Customer focused</span>
+              <span className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold text-sm">Results driven</span>
             </div>
           </div>
         </div>
@@ -522,8 +545,37 @@ export default function About() {
   );
 }`;
 
-/** Default FAQ section — injected when AI omits or stubs it */
-const DEFAULT_FAQ_TSX = `import React, { useState } from "react";
+/** Default Our Team section — injected when AI omits or stubs it */
+const DEFAULT_TEAM_TSX = \`import React from "react";
+const team = [
+  { name: "Sarah Chen", role: "CEO & Co-founder", bio: "Former VP at a Fortune 500. Passionate about building products that scale.", img: "https://i.pravatar.cc/160?u=sarah" },
+  { name: "Marcus Webb", role: "CTO", bio: "Ex-Google engineer. Loves clean architecture and developer experience.", img: "https://i.pravatar.cc/160?u=marcus" },
+  { name: "Priya Patel", role: "Head of Product", bio: "Product leader with 12 years in SaaS. User obsession is the north star.", img: "https://i.pravatar.cc/160?u=priya" },
+  { name: "Alex Rivera", role: "Head of Design", bio: "Design systems and brand. Making complex products feel simple.", img: "https://i.pravatar.cc/160?u=alex" },
+];
+export default function Team() {
+  return (
+    <section id="team" className="py-24 px-6 bg-white">
+      <div className="max-w-6xl mx-auto text-center mb-14">
+        <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Our Team</h2>
+        <p className="text-lg text-slate-600 max-w-2xl mx-auto">The people behind the product. We're here to help you succeed.</p>
+      </div>
+      <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        {team.map((member, i) => (
+          <div key={i} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+            <img src={member.img} alt={member.name} className="rounded-full w-20 h-20 mx-auto mb-4 object-cover ring-4 ring-slate-100" />
+            <h3 className="font-bold text-slate-900 text-lg">{member.name}</h3>
+            <p className="text-indigo-600 font-medium text-sm mb-2">{member.role}</p>
+            <p className="text-slate-600 text-sm">{member.bio}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}`;
+
+/** Default FAQ section — advanced accordion design */
+const DEFAULT_FAQ_TSX = \`import React, { useState } from "react";
 export default function FAQ() {
   const [open, setOpen] = useState(null);
   const items = [
@@ -534,25 +586,26 @@ export default function FAQ() {
     { q: "Is my data secure?", a: "Yes. We use industry-standard encryption and do not share your data with third parties. You can export or delete your data anytime." },
   ];
   return (
-    <section id="faq" className="py-24 px-6 bg-white border-t border-slate-200">
-      <div className="max-w-3xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Frequently Asked Questions</h2>
-        <p className="text-slate-600 mb-10">Everything you need to know. Can't find an answer? Contact us.</p>
+    <section id="faq" className="py-24 px-6 bg-gradient-to-b from-white to-slate-50/50">
+      <div className="max-w-4xl mx-auto">
+        <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">Frequently Asked Questions</h2>
+        <p className="text-slate-600 mb-10">Everything you need to know.</p>
         <div className="space-y-4">
           {items.map((item, i) => (
-            <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden">
+            <div key={i} className={\\\`rounded-2xl border overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow \\\${open === i ? "border-l-4 border-l-indigo-500 border-slate-200" : "border-slate-200"}\\\`}>
               <button type="button" onClick={() => setOpen(open === i ? null : i)} className="w-full flex items-center justify-between gap-4 p-5 text-left">
                 <span className="font-semibold text-slate-900">{item.q}</span>
-                <span className="text-2xl text-slate-400 flex-shrink-0">{open === i ? "−" : "+"}</span>
+                <span className="text-xl text-indigo-500 flex-shrink-0 font-light">{open === i ? "−" : "+"}</span>
               </button>
-              {open === i && <div className="px-5 pb-5 text-slate-600">{item.a}</div>}
+              {open === i && <div className="px-5 pb-5 pt-0 text-slate-600 leading-relaxed border-t border-slate-100">{item.a}</div>}
             </div>
           ))}
         </div>
+        <p className="mt-10 text-center text-slate-600">Can't find an answer? <a href="#contact" className="text-indigo-600 font-semibold hover:underline">Contact us</a>.</p>
       </div>
     </section>
   );
-}`;
+}\`;
 
 /** Default Contact section with form — injected when AI omits or stubs it */
 const DEFAULT_CONTACT_TSX = `import React from "react";
@@ -600,11 +653,13 @@ function isStubContent(content, minLen = 400) {
   return s.length < minLen || !s.includes("id=") || /placeholder|TODO|coming soon/i.test(s);
 }
 
-/** Ensure About, FAQ, Contact exist and are rendered in App. Injects defaults when missing. */
+/** Ensure About, Team, FAQ, Contact exist and are rendered in App. Injects defaults when missing. */
 function ensureAboutFaqContact(allFiles, appContent) {
   let files = [...allFiles];
   const hasAbout = files.some((f) => f.path === "src/components/About.tsx");
   const aboutFile = files.find((f) => f.path === "src/components/About.tsx");
+  const hasTeam = files.some((f) => f.path === "src/components/Team.tsx");
+  const teamFile = files.find((f) => f.path === "src/components/Team.tsx");
   const hasFaq = files.some((f) => f.path === "src/components/FAQ.tsx");
   const faqFile = files.find((f) => f.path === "src/components/FAQ.tsx");
   const hasContact = files.some((f) => f.path === "src/components/Contact.tsx");
@@ -613,6 +668,10 @@ function ensureAboutFaqContact(allFiles, appContent) {
   if (!hasAbout || (aboutFile && isStubContent(aboutFile.content))) {
     files = files.filter((f) => f.path !== "src/components/About.tsx");
     files.push({ path: "src/components/About.tsx", content: DEFAULT_ABOUT_TSX, type: "file" });
+  }
+  if (!hasTeam || (teamFile && isStubContent(teamFile.content))) {
+    files = files.filter((f) => f.path !== "src/components/Team.tsx");
+    files.push({ path: "src/components/Team.tsx", content: DEFAULT_TEAM_TSX, type: "file" });
   }
   if (!hasFaq || (faqFile && isStubContent(faqFile.content))) {
     files = files.filter((f) => f.path !== "src/components/FAQ.tsx");
@@ -628,8 +687,13 @@ function ensureAboutFaqContact(allFiles, appContent) {
     out = out.replace(/(<\/Testimonials>)/, "$1\n      <About />");
     if (!out.includes("<About")) out = out.replace(/(<Testimonials\s*\/>)/, "$1\n      <About />");
   }
+  if (!out.includes("<Team") && !out.includes("<Team />")) {
+    out = out.replace(/(<About\s*\/>)/, "$1\n      <Team />");
+    if (!out.includes("<Team")) out = out.replace(/(<\/About>)/, "$1\n      <Team />");
+  }
   if (!out.includes("<FAQ") && !out.includes("<FAQ />")) {
-    out = out.replace(/(<About \/>)/, "$1\n      <FAQ />");
+    out = out.replace(/(<Team\s*\/>)/, "$1\n      <FAQ />");
+    if (!out.includes("<FAQ")) out = out.replace(/(<\/Team>)/, "$1\n      <FAQ />");
   }
   if (!out.includes("<Contact") && !out.includes("<Contact />")) {
     out = out.replace(/(<\/CTA>)/, "$1\n      <Contact />");
@@ -645,7 +709,7 @@ function sanitizeAppTsx(content) {
   out = out.replace(/^\s*import\s+[\s\S]*?\s+from\s+['"]\.\.?\/components\/[^'"]+['"]\s*;?\s*$/gm, "");
   const componentNames = [
     "Pricing", "FAQ", "ContactForm", "FinalCTA", "Footer", "Hero", "Navbar",
-    "Features", "Testimonials", "ProblemSolution", "CtaSection", "ContactSection", "About", "Contact",
+    "Features", "Testimonials", "ProblemSolution", "CtaSection", "ContactSection", "About", "Team", "Contact",
   ];
   for (const name of componentNames) {
     const openClose = new RegExp(`<${name}[^>]*>[\\s\\S]*?<\\/${name}>`, "g");
@@ -787,7 +851,8 @@ async function handleGenerate(body) {
           }))
       : [];
     if (files.length === 0) throw new Error("No updated App.tsx in response");
-    const appContent = files[0].content;
+    let appContent = String(files[0].content);
+    appContent = stripMarkdownFromCode(appContent);
     const baseFiles = readBaseTemplate();
     const mergedFiles = [
       ...baseFiles,
