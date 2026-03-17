@@ -90,12 +90,22 @@
             presets: [["react"], ["typescript", { onlyRemoveTypeImports: true }]],
             filename: "App.tsx"
           }).code;
+          // Remove any remaining import/export so code runs in non-module context (new Function)
+          compiled = compiled.replace(/\bimport\s+[\s\S]*?from\s+['"][^'"]*['"]\s*;?/g, "");
+          compiled = compiled.replace(/\bimport\s+['"][^'"]*['"]\s*;?/g, "");
+          compiled = compiled.replace(/\bimport\s*\([^)]*\)\s*\.\s*then\s*\([^)]*\)\s*;?/g, "");
+          compiled = compiled.replace(/\bimport\s*\([^)]*\)\s*;?/g, "");
           compiled = compiled.replace(/\bexport\s+default\s+/g, "var __previewDefault = ");
           compiled = compiled.replace(/\bexport\s+function\s+/g, "function ");
           compiled = compiled.replace(/\bexport\s+const\s+/g, "const ");
           compiled = compiled.replace(/\bexport\s+var\s+/g, "var ");
           compiled = compiled.replace(/\bexport\s+class\s+/g, "class ");
           compiled = compiled.replace(/export\s*\{[^}]*\}\s*;?/g, "");
+          compiled = compiled.replace(/\bexport\s+\{[^}]*\}\s*;?/g, "");
+          compiled = compiled.replace(/\bexport\s+\*\s+from\s+['"][^'"]*['"]\s*;?/g, "");
+          // Final pass: remove any remaining import (e.g. Babel output) so new Function() never sees it
+          compiled = compiled.replace(/\bimport\s+[\s\S]+?;\s*/g, "");
+          compiled = compiled.replace(/\bimport\s*\([\s\S]*?\)\s*(\.then\s*\([\s\S]*?\))?\s*;?/g, "");
           compiled = compiled.trim();
           if (compiled.length > 0 && !/;\s*$/.test(compiled)) compiled = compiled + ";";
           var componentNames = ["Navbar","Hero","Features","Testimonials","Pricing","CTA","Footer","About","FAQ","Contact","OurTeam","ContactSection","FinalCTA","Showcase","ProblemSolution","Card","Button","Container","Section"];
