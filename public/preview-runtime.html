@@ -98,14 +98,14 @@
           componentNames.forEach(function(n) {
             var esc = n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             var fallback = "(typeof " + n + " !== 'undefined' ? " + n + " : __ph[" + JSON.stringify(n) + "])";
-            var withComma = new RegExp("createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*,", "g");
-            compiled = compiled.replace(withComma, "createElement(" + fallback + ",");
-            var noComma = new RegExp("createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*\\)", "g");
-            compiled = compiled.replace(noComma, "createElement(" + fallback + ")");
             var reactWithComma = new RegExp("React\\.createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*,", "g");
             compiled = compiled.replace(reactWithComma, "React.createElement(" + fallback + ",");
             var reactNoComma = new RegExp("React\\.createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*\\)", "g");
             compiled = compiled.replace(reactNoComma, "React.createElement(" + fallback + ")");
+            var withComma = new RegExp("createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*,", "g");
+            compiled = compiled.replace(withComma, "createElement(" + fallback + ",");
+            var noComma = new RegExp("createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*\\)", "g");
+            compiled = compiled.replace(noComma, "createElement(" + fallback + ")");
           });
           var __phAssign = "var __ph = { " + componentNames.map(function(n) { return n + ": Placeholder('" + n + "')"; }).join(", ") + " }; ";
           var globals = "const { useState, useEffect, useRef, useMemo, useCallback, createElement, Component } = React; "

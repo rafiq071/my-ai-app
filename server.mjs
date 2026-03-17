@@ -875,6 +875,26 @@ function validForPreview(files) {
   return missing.length === 0;
 }
 
+/** STEP 10 — SYNTAX VALIDATION BEFORE PREVIEW */
+function isValidTSX(code) {
+  try {
+    new Function(code);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function validateSyntaxForPreview(files) {
+  for (const f of files) {
+    if (f.path.endsWith(".tsx") || f.path.endsWith(".ts") || f.path.endsWith(".js")) {
+      if (!isValidTSX(String(f.content ?? ""))) {
+        throw new Error(`Syntax error detected in ${f.path}`);
+      }
+    }
+  }
+}
+
 const DEFAULT_APP_STRICT = `import Navbar from "./components/Navbar"
 import Hero from "./components/Hero"
 import Features from "./components/Features"
@@ -1093,6 +1113,7 @@ ${missing.map((x) => `src/components/${x}.tsx`).join("\n")}
         lastParseResult = { retryMessage: userMessage + "\n\nGenerated project failed validation. Ensure src/App.tsx and all referenced component files are included." };
         continue;
       }
+      validateSyntaxForPreview(mergedFiles);
       console.log("[AI] Modify success");
       return {
         success: true,
@@ -1178,7 +1199,7 @@ ${missing.map((x) => `src/components/${x}.tsx`).join("\n")}
     parseResult = tryParseJSON(String(retryText));
   }
   if (!parseResult.ok || !parseResult.parsed || !validResponse(parseResult.parsed)) {
-    throw new Error("AI generation failed: invalid JSON or missing files array. Retrying...");
+    throw new Error("Generated project failed validation.");
   }
   const parsed = parseResult.parsed;
 
@@ -1281,6 +1302,7 @@ ${missing.map((x) => `src/components/${x}.tsx`).join("\n")}
             });
           const files = [...merged, ...extra];
           if (validForPreview(files)) {
+            validateSyntaxForPreview(files);
             console.log("[AI] Generation success (after missing-components retry), files:", files.map((f) => f.path).join(", "));
             return { success: true, project: { name, description, files } };
           }
@@ -1316,6 +1338,7 @@ ${missing.map((x) => `src/components/${x}.tsx`).join("\n")}
   if (!validForPreview(files)) {
     throw new Error("Generated project failed validation.");
   }
+  validateSyntaxForPreview(files);
   console.log("[AI] Generation success, files:", files.map((f) => f.path).join(", "));
   return { success: true, project: { name, description, files } };
 }

@@ -649,6 +649,26 @@ function validForPreview(files: { path: string; content?: string }[]): boolean {
   return missing.length === 0;
 }
 
+/** STEP 10 — SYNTAX VALIDATION BEFORE PREVIEW */
+function isValidTSX(code: string): boolean {
+  try {
+    new Function(code);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function validateSyntaxForPreview(files: { path: string; content?: string }[]): void {
+  for (const f of files) {
+    if (f.path.endsWith(".tsx") || f.path.endsWith(".ts") || f.path.endsWith(".js")) {
+      if (!isValidTSX(String(f.content ?? ""))) {
+        throw new Error(`Syntax error detected in ${f.path}`);
+      }
+    }
+  }
+}
+
 const REQUIRED_PATHS = [
   "src/App.tsx",
   "src/components/Navbar.tsx",
@@ -989,11 +1009,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       parseResult = tryParseJSON(raw);
     }
     if (!parseResult.ok || !parseResult.parsed || !validResponse(parseResult.parsed)) {
-      return res.status(500).json({
-        error: true,
-        message: "Model did not return valid JSON or files array",
-        raw: raw.slice(0, 500),
-      });
+      return res.status(500).json({ error: true, message: "Generated project failed validation." });
     }
 
     const parsed = parseResult.parsed;
@@ -1011,7 +1027,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     files = normalizePaths(files);
 
     if (files.length === 0) {
-      return res.status(500).json({ error: true, message: "No valid files in response" });
+      return res.status(500).json({ error: true, message: "Generated project failed validation." });
     }
 
     files = autoFixGeneratedFiles(files);
@@ -1029,10 +1045,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const missing = getMissingComponentFiles(appContent, files);
       if (missing.length === 0) break;
       if (attempt >= maxAttempts - 1) {
-        return res.status(500).json({
-          error: true,
-          message: "Preview validation failed: missing components " + missing.join(", "),
-        });
+        return res.status(500).json({ error: true, message: "Generated project failed validation." });
       }
       const retryCompletion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -1048,7 +1061,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const retryRaw = retryCompletion.choices[0]?.message?.content ?? "";
       const retryParseResult = tryParseJSON(retryRaw);
       if (!retryParseResult.ok || !validResponse(retryParseResult.parsed)) {
-        return res.status(500).json({ error: true, message: "Retry after missing components did not return valid JSON." });
+        return res.status(500).json({ error: true, message: "Generated project failed validation." });
       }
       const retryParsed = retryParseResult.parsed;
       files = Array.isArray(retryParsed.files)
@@ -1062,7 +1075,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         : [];
       files = normalizePaths(files);
       if (files.length === 0) {
-        return res.status(500).json({ error: true, message: "No valid files in retry response." });
+        return res.status(500).json({ error: true, message: "Generated project failed validation." });
       }
       files = autoFixGeneratedFiles(files);
       const idxApp = files.findIndex((f: any) => f.path === "src/App.tsx" || f.path === "App.tsx");
@@ -1075,6 +1088,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!validForPreview(files)) {
       return res.status(500).json({ error: true, message: "Generated project failed validation." });
     }
+
+    validateSyntaxForPreview(files);
 
     return res.status(200).json({
       success: true,
