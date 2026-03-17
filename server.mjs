@@ -875,7 +875,7 @@ function validForPreview(files) {
   return missing.length === 0;
 }
 
-/** STEP 10 — SYNTAX VALIDATION BEFORE PREVIEW */
+/** STEP 10 — SYNTAX VALIDATION BEFORE PREVIEW (skip .tsx/.jsx — they use JSX/imports so new Function() would always fail; preview runtime uses Babel) */
 function isValidTSX(code) {
   try {
     new Function(code);
@@ -887,7 +887,9 @@ function isValidTSX(code) {
 
 function validateSyntaxForPreview(files) {
   for (const f of files) {
-    if (f.path.endsWith(".tsx") || f.path.endsWith(".ts") || f.path.endsWith(".js")) {
+    const path = f.path || "";
+    if (path.endsWith(".tsx") || path.endsWith(".jsx")) continue;
+    if (path.endsWith(".ts") || path.endsWith(".js")) {
       if (!isValidTSX(String(f.content ?? ""))) {
         throw new Error(`Syntax error detected in ${f.path}`);
       }
