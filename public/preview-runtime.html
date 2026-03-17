@@ -137,16 +137,18 @@
             App = runCode(compiled);
           } catch (parseErr) {
             if ((parseErr.message || "").indexOf("Unexpected token ')'") !== -1) {
-              var fixed = compiled;
-              // Fix 1: trailing " ) ) ;" or "));" -> ");
-              fixed = fixed.replace(/\s*\)\s*\)\s*\;?\s*$/, ");");
-              // Fix 2: trailing "); );" or "); )" (extra closing after return statement)
-              if (fixed === compiled) fixed = fixed.replace(/\)\s*;\s*\)\s*\;?\s*$/, ");");
-              // Fix 3: trailing "}; );" (extra ");" after function closing)
-              if (fixed === compiled) fixed = fixed.replace(/\}\s*;\s*\)\s*\;?\s*$/, "};");
-              if (fixed !== compiled) {
-                try { App = runCode(fixed); } catch (e2) { throw parseErr; }
-              } else {
+              var code = compiled;
+              // 1. Remove duplicate closing parentheses at the end of compiled code
+              code = code.replace(/\)\s*\)\s*;?$/, ');');
+              // 2. Fix duplicate statement endings like "); );" or "); )"
+              code = code.replace(/\);\s*\);\s*$/, ');');
+              // 3. Fix function endings like "}; );"
+              code = code.replace(/\};\s*\);\s*$/, '};');
+              // 4. Remove any extra closing parenthesis at the very end
+              code = code.replace(/\)+\s*$/, ')');
+              try {
+                App = runCode(code);
+              } catch (e2) {
                 throw parseErr;
               }
             } else {
