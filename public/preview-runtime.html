@@ -96,15 +96,18 @@
           compiled = compiled.trim();
           if (compiled.length > 0 && !/;\s*$/.test(compiled)) compiled = compiled + ";";
           var componentNames = ["Navbar","Hero","Features","Testimonials","Pricing","CTA","Footer","About","FAQ","Contact","OurTeam","ContactSection","FinalCTA","Showcase","ProblemSolution","Card","Button","Container","Section"];
-          componentNames.sort(function(a, b) { return b.length - a.length; });
-          componentNames.forEach(function(n) {
-            var esc = n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-            var fallback = "(typeof " + n + " !== 'undefined' ? " + n + " : __ph[" + JSON.stringify(n) + "])";
-            var reactWithComma = new RegExp("React\\.createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*,", "g");
-            compiled = compiled.replace(reactWithComma, "React.createElement(" + fallback + ",");
-            var reactNoComma = new RegExp("React\\.createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*\\)", "g");
-            compiled = compiled.replace(reactNoComma, "React.createElement(" + fallback + ")");
-          });
+          var isConsolidated = /\bfunction\s+(Navbar|Hero|Features)\s*\(/.test(compiled);
+          if (!isConsolidated) {
+            componentNames.sort(function(a, b) { return b.length - a.length; });
+            componentNames.forEach(function(n) {
+              var esc = n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              var fallback = "(typeof " + n + " !== 'undefined' ? " + n + " : __ph[" + JSON.stringify(n) + "])";
+              var reactWithComma = new RegExp("React\\.createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*,", "g");
+              compiled = compiled.replace(reactWithComma, "React.createElement(" + fallback + ",");
+              var reactNoComma = new RegExp("React\\.createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*\\)", "g");
+              compiled = compiled.replace(reactNoComma, "React.createElement(" + fallback + ")");
+            });
+          }
           var __phAssign = "var __ph = { " + componentNames.map(function(n) { return n + ": Placeholder('" + n + "')"; }).join(", ") + " }; ";
           var globals = "const { useState, useEffect, useRef, useMemo, useCallback, createElement, Component } = React; "
             + "var Link = function Link(props) { var p = props || {}; var href = p.href || '#'; var rest = {}; for (var k in p) { if (k !== 'href' && k !== 'to' && k !== 'smooth') rest[k] = p[k]; } if (p.to && !p.href) href = p.to; return createElement('a', Object.assign({ href: href }, rest), p.children); }; "
@@ -112,17 +115,19 @@
             + __phAssign + " ";
           var codeToRun = globals + compiled + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null);";
           var App = null;
+          function runCode(c) {
+            var code = globals + c + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null);";
+            var fn = new Function("React", "ReactDOM", "return (function(){ " + code + " })()");
+            return fn(window.React, window.ReactDOM);
+          }
           try {
-            var fn = new Function("React", "ReactDOM", "return (function(){ " + codeToRun + " })()");
-            App = fn(window.React, window.ReactDOM);
+            App = runCode(compiled);
           } catch (parseErr) {
             if ((parseErr.message || "").indexOf("Unexpected token ')'") !== -1) {
               var fixed = compiled.replace(/\s*\)\s*\)\s*\;?\s*$/, ");");
-              try {
-                var codeFixed = globals + fixed + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null);";
-                var fn2 = new Function("React", "ReactDOM", "return (function(){ " + codeFixed + " })()");
-                App = fn2(window.React, window.ReactDOM);
-              } catch (e2) {
+              if (fixed !== compiled) {
+                try { App = runCode(fixed); } catch (e2) { throw parseErr; }
+              } else {
                 throw parseErr;
               }
             } else {
