@@ -369,8 +369,13 @@ export default function App() {
       setEditorDirty(false);
       setModifyInstruction("");
       setAiError(null);
-      // Preview with only the updated App.tsx so the iframe gets exactly what the API returned (no merge with old components that could break)
-      runPreview([{ path: "src/App.tsx", content: newContent }]);
+      const nextFiles = projectFiles.map((p) =>
+        p.path === "src/App.tsx" ? { ...p, content: newContent } : p
+      );
+      const list = nextFiles
+        .filter((f) => f?.path && !isConfigPath(f.path))
+        .map((f) => ({ path: f.path, content: String(f.content ?? "") }));
+      runPreview(list);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Modification failed";
       setAiError(e instanceof Error && e.name === "AbortError" ? "Request timed out. Try again." : msg);

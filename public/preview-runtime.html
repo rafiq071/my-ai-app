@@ -4,9 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Preview</title>
-  <script>
-    (function(){ var w = console.warn; console.warn = function(m) { if (typeof m === 'string' && m.indexOf('cdn.tailwindcss.com') !== -1) return; return w.apply(console, arguments); }; })();
-  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -52,9 +49,6 @@
 </head>
 <body>
   <div id="root"></div>
-  <style>
-    html { scroll-behavior: smooth; }
-  </style>
   <script>
     (function() {
       var rootEl = document.getElementById("root");
@@ -75,17 +69,6 @@
         if (appCode.indexOf("```") === 0) {
           appCode = appCode.replace(/^```(?:tsx|jsx|ts|js)?\s*/i, "").replace(/```\s*$/g, "").trim();
         }
-        // Preprocessing: sanitize common AI generation issues before Babel
-        appCode = appCode
-          .replace(/<<<<<<<[\s\S]*?=======/g, '')
-          .replace(/>>>>>>>[\s\S]*?\n/g, '')
-          .replace(/```[a-z]*\n?/gi, '')
-          .replace(/```/g, '');
-        appCode = appCode.replace(/<<<<<<< [^\n]*[\s\S]*?=======[\s\S]*?>>>>>>>[^\n]*/g, "").trim();
-        if (!appCode || appCode.length === 0) {
-          rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626\">Preview error: Generated app code is empty.</div>";
-          return;
-        }
         appCode = appCode.replace(/import\s+React.*?;/g, "");
         appCode = appCode.replace(/import\s+.*?from\s+['"].*?['"];?/g, "");
         appCode = appCode.replace(/import\s+[\s\S]*?from\s+['"][^'"]*['"]\s*;?/g, "");
@@ -97,110 +80,32 @@
         var iconNames = ["Menu", "Check", "X", "ArrowRight", "ArrowLeft", "Plus", "Minus", "Star", "Search", "User", "Settings", "Home", "Mail", "Phone", "ChevronRight", "ChevronLeft", "ChevronDown", "ChevronUp", "ExternalLink", "Zap", "Shield", "Heart", "MessageCircle", "Calendar", "FileText", "Image", "Download", "Upload", "Trash2", "Edit", "Copy", "Share2"];
         iconNames.forEach(function(name) { if (typeof window[name] === "undefined") window[name] = Icon; });
         try {
-          // Step 2 — Compile with Babel
           var compiled = Babel.transform(appCode, {
             presets: [["react"], ["typescript", { onlyRemoveTypeImports: true }]],
             filename: "App.tsx"
           }).code;
-          // Remove any remaining import/export so code runs in non-module context (new Function)
-          compiled = compiled.replace(/\bimport\s+[\s\S]*?from\s+['"][^'"]*['"]\s*;?/g, "");
-          compiled = compiled.replace(/\bimport\s+['"][^'"]*['"]\s*;?/g, "");
-          compiled = compiled.replace(/\bimport\s*\([^)]*\)\s*\.\s*then\s*\([^)]*\)\s*;?/g, "");
-          compiled = compiled.replace(/\bimport\s*\([^)]*\)\s*;?/g, "");
           compiled = compiled.replace(/\bexport\s+default\s+/g, "var __previewDefault = ");
           compiled = compiled.replace(/\bexport\s+function\s+/g, "function ");
           compiled = compiled.replace(/\bexport\s+const\s+/g, "const ");
           compiled = compiled.replace(/\bexport\s+var\s+/g, "var ");
           compiled = compiled.replace(/\bexport\s+class\s+/g, "class ");
           compiled = compiled.replace(/export\s*\{[^}]*\}\s*;?/g, "");
-          compiled = compiled.replace(/\bexport\s+\{[^}]*\}\s*;?/g, "");
-          compiled = compiled.replace(/\bexport\s+\*\s+from\s+['"][^'"]*['"]\s*;?/g, "");
-          // Final pass: remove any remaining import (e.g. Babel output) so new Function() never sees it
-          compiled = compiled.replace(/\bimport\s+[\s\S]+?;\s*/g, "");
-          compiled = compiled.replace(/\bimport\s*\([\s\S]*?\)\s*(\.then\s*\([\s\S]*?\))?\s*;?/g, "");
-          compiled = compiled.trim();
-          if (compiled.length > 0 && !/;\s*$/.test(compiled)) compiled = compiled + ";";
-          var componentNames = ["Navbar","Hero","Features","Testimonials","Pricing","CTA","Footer","About","FAQ","Contact","OurTeam","ContactSection","FinalCTA","Showcase","ProblemSolution","Card","Button","Container","Section"];
-          var isConsolidated = /\bfunction\s+(Navbar|Hero|Features)\s*\(/.test(compiled);
-          if (!isConsolidated) {
-            componentNames.sort(function(a, b) { return b.length - a.length; });
-            componentNames.forEach(function(n) {
-              var esc = n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-              var fallback = "(typeof " + n + " !== 'undefined' ? " + n + " : __ph[" + JSON.stringify(n) + "])";
-              var reactWithComma = new RegExp("React\\.createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*,", "g");
-              compiled = compiled.replace(reactWithComma, "React.createElement(" + fallback + ",");
-              var reactNoComma = new RegExp("React\\.createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*\\)", "g");
-              compiled = compiled.replace(reactNoComma, "React.createElement(" + fallback + ")");
-            });
-          }
-          var __phAssign = "var __ph = { " + componentNames.map(function(n) { return n + ": Placeholder('" + n + "')"; }).join(", ") + " }; ";
-          var globals = "const { useState, useEffect, useRef, useMemo, useCallback, createElement, Component } = React; "
-            + "var Link = function Link(props) { var p = props || {}; var href = p.href || '#'; var rest = {}; for (var k in p) { if (k !== 'href' && k !== 'to' && k !== 'smooth') rest[k] = p[k]; } if (p.to && !p.href) href = p.to; return createElement('a', Object.assign({ href: href }, rest), p.children); }; "
-            + "var Placeholder = function(name) { return function(props) { return createElement('div', { style: { padding: '12px 16px', border: '1px dashed #e2e8f0', borderRadius: '8px', margin: '8px 0', fontSize: '14px', color: '#64748b', minHeight: '24px' } }, name); }; "
-            + __phAssign + " ";
-          var codeToRun = globals + compiled + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null);";
-          var App = null;
-          var runCodeError = null;
-          function runCode(c) {
-            var code = globals + c + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null);";
-            var fn = new Function("React", "ReactDOM", "return (function(){ " + code + " })()");
-            return fn(window.React, window.ReactDOM);
-          }
-          // Step 3 — Safe wrapper execution (preview never crashes)
-          try {
-            App = runCode(compiled);
-          } catch (err) {
-            if (err.message && err.message.includes("Unexpected token ')'")) {
-              var code = compiled;
-              code = code.replace(/\)\s*\)\s*;?$/, ');');
-              code = code.replace(/\);\s*\);\s*$/, ');');
-              code = code.replace(/\};\s*\);\s*$/, '};');
-              code = code.replace(/\)+\s*$/, ')');
-              try {
-                App = runCode(code);
-              } catch (e) {
-                runCodeError = e;
-              }
-            } else {
-              runCodeError = err;
-            }
-          }
-          if (runCodeError) {
-            rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626;max-width:100%;overflow:auto;white-space:pre-wrap\">Preview error: " + (runCodeError.message || String(runCodeError)).replace(/</g, "&lt;").replace(/>/g, "&gt;") + "</div>";
-          } else if (App && typeof App === "function") {
+          var globals = "const { useState, useEffect, useRef, useMemo, useCallback, createElement } = React; "
+            + "var Link = function Link(props) { var p = props || {}; var href = p.href || '#'; var rest = {}; for (var k in p) { if (k !== 'href' && k !== 'to') rest[k] = p[k]; } if (p.to && !href) href = p.to; return createElement('a', Object.assign({ href: href }, rest), p.children); }; ";
+          var fn = new Function("React", "ReactDOM", "return (function(){ " + globals + compiled + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null); })()");
+          var App = fn(window.React, window.ReactDOM);
+          if (App && typeof App === "function") {
             if (!window.__app_root__) {
               window.__app_root__ = ReactDOM.createRoot(document.getElementById("root"));
             }
-            function ErrorBoundary(props) { React.Component.call(this, props); this.state = { error: null }; }
-            ErrorBoundary.prototype = Object.create(React.Component.prototype);
-            ErrorBoundary.prototype.constructor = ErrorBoundary;
-            if (ErrorBoundary.prototype.getDerivedStateFromError) delete ErrorBoundary.prototype.getDerivedStateFromError;
-            ErrorBoundary.getDerivedStateFromError = function(err) { return { error: err }; };
-            ErrorBoundary.prototype.componentDidCatch = function(err, info) { console.error("Preview error", err, info); };
-            ErrorBoundary.prototype.render = function() {
-              if (this.state && this.state.error) {
-                var msg = (this.state.error && this.state.error.message) || String(this.state.error);
-                return React.createElement("div", { style: { padding: "40px", fontFamily: "system-ui", color: "#dc2626", maxWidth: "100%", overflow: "auto" } }, "Preview error (fix your code and click Run again): ", msg);
-              }
-              return this.props.children;
-            };
-            window.__app_root__.render(React.createElement(ErrorBoundary, null, React.createElement(App)));
+            window.__app_root__.render(React.createElement(App));
           } else {
             rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626\">Preview: no default export.</div>";
           }
         } catch (err) {
-          rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626;max-width:100%;overflow:auto;white-space:pre-wrap\">Preview error: " + (err.message || String(err)).replace(/</g, "&lt;").replace(/>/g, "&gt;") + "</div>";
+          rootEl.innerHTML = "<div style=\"padding:40px;font-family:system-ui;color:#dc2626\">Preview error: " + (err.message || String(err)).replace(/</g, "&lt;") + "</div>";
         }
       }
-
-      document.addEventListener("click", function(e) {
-        var a = e.target && e.target.closest && e.target.closest("a[href^=\"#\"]");
-        if (a && a.getAttribute("href").length > 1) {
-          var id = a.getAttribute("href").slice(1);
-          var el = document.getElementById(id);
-          if (el) { e.preventDefault(); el.scrollIntoView({ behavior: "smooth", block: "start" }); }
-        }
-      }, true);
 
       async function loadPreview() {
         try {

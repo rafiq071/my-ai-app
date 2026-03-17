@@ -55,15 +55,6 @@ Every section MUST have an id so nav links work: id="features", id="pricing", id
 
 Output MUST be valid JSON only. No markdown fences. Safe paths: no absolute, no '..'.`
 
-const MODIFY_SYSTEM_PROMPT = `You are an expert React developer. The user will give you their EXISTING App.tsx code and a modification request.
-
-TASK: Apply ONLY the requested modification to the existing code. Do NOT replace the whole app. Do NOT remove existing sections unless the user asks to. Keep the same structure, styling, and nav links (e.g. <a href="#features">). Add or change only what the user asked for.
-
-Return valid JSON only. Format: { "name": "string", "description": "string", "files": [ { "path": "src/App.tsx", "content": "full updated App.tsx as a single string" } ] }
-- "content" must be the COMPLETE updated App.tsx (export default function App() { ... }) with the modification applied.
-- Use inline styles (style={{ ... }}). Keep section ids (id="features", id="pricing", id="about", id="faq", id="contact") and <a href="#..."> for nav so links work.
-- No markdown, no explanation outside JSON. Escape quotes in content (\\n, \\").`
-
 const MAX_PROMPT_CHARS = Number(process.env.MAX_PROMPT_CHARS || 4000)
 const MAX_OUTPUT_TOKENS = Number(process.env.MAX_OUTPUT_TOKENS || 3600)
 const TEMPERATURE = Number(process.env.GENERATION_TEMPERATURE || 0.35)
@@ -185,25 +176,17 @@ export async function POST(request: NextRequest) {
       throw new Error(`Prompt too long (max ${MAX_PROMPT_CHARS} chars)`)
     }
 
-    const isModify = body?.modify === true && Array.isArray(body?.existingFiles) && body.existingFiles.length > 0
-    const existingFiles = Array.isArray(body?.existingFiles) ? body.existingFiles : []
-    const existingApp = existingFiles.find((f: any) => f?.path === 'src/App.tsx' || f?.path === 'App.tsx')
-    const existingAppContent = existingApp && typeof existingApp.content === 'string' ? existingApp.content : ''
-    const userPrompt = isModify && existingAppContent
-      ? `Existing App.tsx:\n\`\`\`\n${existingAppContent.slice(0, 24000)}\n\`\`\`\n\nUser modification request: ${prompt}`
-      : prompt
-
     // ===== Model selection =====
     const selectedModel = selectBestModel({
-      prompt: userPrompt,
-      hasExistingProject: isModify,
-      fileCount: existingFiles.length,
+      prompt,
+      hasExistingProject: false,
+      fileCount: 0,
     })
 
     const reason = getSelectionReason(selectedModel, {
-      prompt: userPrompt,
-      hasExistingProject: isModify,
-      fileCount: existingFiles.length,
+      prompt,
+      hasExistingProject: false,
+      fileCount: 0,
     })
 
     const estimatedCost = estimateCost(selectedModel)
@@ -256,12 +239,12 @@ export async function POST(request: NextRequest) {
     // ===== Non-streaming: Generation with validation + retry/fallback =====
     const attempts: Array<{ modelId: string; ok: boolean; error?: string }> = []
 
-    const tryOnce = async (model: typeof selectedModel, promptText: string) => {
+    const tryOnce = async (model: typeof selectedModel, userPrompt: string) => {
       const result = await generateWithAI({
         model,
-        prompt: promptText,
-        systemPrompt: isModify ? MODIFY_SYSTEM_PROMPT : SYSTEM_PROMPT,
-        temperature: isModify ? 0.3 : TEMPERATURE,
+        prompt: userPrompt,
+        systemPrompt: SYSTEM_PROMPT,
+        temperature: TEMPERATURE,
         maxTokens: Math.min(MAX_OUTPUT_TOKENS, model.maxTokens),
         responseFormat: 'json_object',
       })
@@ -291,7 +274,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Attempt 1: selected model
-    let r1 = await tryOnce(selectedModel, userPrompt)
+    let r1 = await tryOnce(selectedModel, prompt)
     attempts.push({ modelId: selectedModel.id, ok: r1.ok, error: r1.ok ? undefined : r1.error })
 
     // Attempt 2: repair prompt with same model
@@ -310,7 +293,7 @@ export async function POST(request: NextRequest) {
           ? AVAILABLE_MODELS['gemini-pro']
           : AVAILABLE_MODELS['gpt-4-turbo']
 
-      const r3 = await tryOnce(fallback, userPrompt)
+      const r3 = await tryOnce(fallback, prompt)
       attempts.push({ modelId: fallback.id, ok: r3.ok, error: r3.ok ? undefined : r3.error })
       finalResult = r3
     }
