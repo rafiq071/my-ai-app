@@ -137,7 +137,13 @@
             App = runCode(compiled);
           } catch (parseErr) {
             if ((parseErr.message || "").indexOf("Unexpected token ')'") !== -1) {
-              var fixed = compiled.replace(/\s*\)\s*\)\s*\;?\s*$/, ");");
+              var fixed = compiled;
+              // Fix 1: trailing " ) ) ;" or "));" -> ");
+              fixed = fixed.replace(/\s*\)\s*\)\s*\;?\s*$/, ");");
+              // Fix 2: trailing "); );" or "); )" (extra closing after return statement)
+              if (fixed === compiled) fixed = fixed.replace(/\)\s*;\s*\)\s*\;?\s*$/, ");");
+              // Fix 3: trailing "}; );" (extra ");" after function closing)
+              if (fixed === compiled) fixed = fixed.replace(/\}\s*;\s*\)\s*\;?\s*$/, "};");
               if (fixed !== compiled) {
                 try { App = runCode(fixed); } catch (e2) { throw parseErr; }
               } else {
