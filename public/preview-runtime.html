@@ -93,6 +93,8 @@
           compiled = compiled.replace(/\bexport\s+var\s+/g, "var ");
           compiled = compiled.replace(/\bexport\s+class\s+/g, "class ");
           compiled = compiled.replace(/export\s*\{[^}]*\}\s*;?/g, "");
+          compiled = compiled.trim();
+          if (compiled.length > 0 && !/;\s*$/.test(compiled)) compiled = compiled + ";";
           var componentNames = ["Navbar","Hero","Features","Testimonials","Pricing","CTA","Footer","About","FAQ","Contact","OurTeam","ContactSection","FinalCTA","Showcase","ProblemSolution","Card","Button","Container","Section"];
           componentNames.sort(function(a, b) { return b.length - a.length; });
           componentNames.forEach(function(n) {
@@ -102,18 +104,31 @@
             compiled = compiled.replace(reactWithComma, "React.createElement(" + fallback + ",");
             var reactNoComma = new RegExp("React\\.createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*\\)", "g");
             compiled = compiled.replace(reactNoComma, "React.createElement(" + fallback + ")");
-            var withComma = new RegExp("createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*,", "g");
-            compiled = compiled.replace(withComma, "createElement(" + fallback + ",");
-            var noComma = new RegExp("createElement\\s*\\(\\s*\\b" + esc + "\\b\\s*\\)", "g");
-            compiled = compiled.replace(noComma, "createElement(" + fallback + ")");
           });
           var __phAssign = "var __ph = { " + componentNames.map(function(n) { return n + ": Placeholder('" + n + "')"; }).join(", ") + " }; ";
           var globals = "const { useState, useEffect, useRef, useMemo, useCallback, createElement, Component } = React; "
             + "var Link = function Link(props) { var p = props || {}; var href = p.href || '#'; var rest = {}; for (var k in p) { if (k !== 'href' && k !== 'to' && k !== 'smooth') rest[k] = p[k]; } if (p.to && !p.href) href = p.to; return createElement('a', Object.assign({ href: href }, rest), p.children); }; "
             + "var Placeholder = function(name) { return function(props) { return createElement('div', { style: { padding: '12px 16px', border: '1px dashed #e2e8f0', borderRadius: '8px', margin: '8px 0', fontSize: '14px', color: '#64748b', minHeight: '24px' } }, name); }; "
             + __phAssign + " ";
-          var fn = new Function("React", "ReactDOM", "return (function(){ " + globals + compiled + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null); })()");
-          var App = fn(window.React, window.ReactDOM);
+          var codeToRun = globals + compiled + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null);";
+          var App = null;
+          try {
+            var fn = new Function("React", "ReactDOM", "return (function(){ " + codeToRun + " })()");
+            App = fn(window.React, window.ReactDOM);
+          } catch (parseErr) {
+            if ((parseErr.message || "").indexOf("Unexpected token ')'") !== -1) {
+              var fixed = compiled.replace(/\s*\)\s*\)\s*\;?\s*$/, ");");
+              try {
+                var codeFixed = globals + fixed + "; return typeof __previewDefault !== 'undefined' ? __previewDefault : (typeof App !== 'undefined' ? App : null);";
+                var fn2 = new Function("React", "ReactDOM", "return (function(){ " + codeFixed + " })()");
+                App = fn2(window.React, window.ReactDOM);
+              } catch (e2) {
+                throw parseErr;
+              }
+            } else {
+              throw parseErr;
+            }
+          }
           if (App && typeof App === "function") {
             if (!window.__app_root__) {
               window.__app_root__ = ReactDOM.createRoot(document.getElementById("root"));
