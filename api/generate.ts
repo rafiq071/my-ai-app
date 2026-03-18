@@ -6,7 +6,7 @@ const PLAN_PROMPT = `You are a product designer. Given a user request for a webs
 Schema (return exactly this JSON shape):
 {
   "pages": ["Home"],
-  "components": ["Navbar", "Hero", "Features", "Testimonials", "Pricing", "About", "Team", "CTA", "Footer"],
+  "components": ["Navbar", "Hero", "Features", "Showcase", "About", "Testimonials", "Pricing", "FAQ", "Contact", "Footer"],
   "design": {
     "framework": "React",
     "styling": "TailwindCSS",
@@ -14,55 +14,91 @@ Schema (return exactly this JSON shape):
   }
 }
 
-Include all section components: Navbar, Hero, Features, Testimonials, Pricing, About, Team, CTA, Footer. Return ONLY valid JSON.`;
+Include all section components: Navbar, Hero, Features, Showcase, About, Testimonials, Pricing, FAQ, Contact, Footer. Return ONLY valid JSON.`;
 
 const TEMPLATE_HINT = `
-Use proven SaaS landing page layout patterns used by modern startups.
-
-Preferred UI structures:
-
-Hero with product preview
-Feature grid (3 or 6 cards)
-Alternating product sections
-Pricing comparison table
-Customer testimonials grid
-Centered CTA banner
-Multi-column footer
-
-Design guidelines:
-
-• Use generous spacing
-• Use clear typography hierarchy
-• Avoid cramped layouts
-• Use grid systems
-• Use visual hierarchy
-
-Visual style inspiration:
-
-Stripe
-Linear
-Vercel
-Framer
-Lovable
-
-Generated pages must feel like real SaaS marketing sites.
+When the user enters a short prompt like "AI SaaS for marketing automation", "Fitness coaching app", or "Crypto portfolio tracker", generate a COMPLETE high-end SaaS landing page. Infer the product and write all copy around that theme. Quality target: Stripe, Linear, Vercel, Notion, Framer. UI must look premium, modern, and production-ready. Use the exact design system: container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; section py-16 md:py-24; hero py-20 md:py-28; cards rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition; primary button bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:shadow-lg; secondary border border-gray-300 hover:bg-gray-50. Semantic HTML; images with alt; forms with labels; FAQ with aria-expanded and aria-controls; footer social with aria-label and current year.
 `;
 
-const SYSTEM_PROMPT = `You are a world-class senior frontend engineer and product designer building modern SaaS marketing websites comparable to Stripe, Linear, Vercel, and Lovable.
+const SYSTEM_PROMPT = `You are a senior product designer and senior React + Tailwind engineer. Simple prompts like "AI SaaS for marketing automation", "Fitness coaching app", "Crypto portfolio tracker" must automatically generate a HIGH-END SaaS landing page comparable to Stripe, Linear, Vercel, Notion, and Framer. The generated UI must look premium, modern, and production-ready.
 
-You NEVER generate text-only sections.
+------------------------------------------------
+DESIGN SYSTEM
 
-Every section MUST contain visual UI elements such as:
+Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+Section spacing: py-16 md:py-24
+Hero spacing: py-20 md:py-28
 
-• cards
-• dashboards
-• analytics panels
-• UI preview blocks
-• feature cards
-• pricing tables
-• testimonial cards
+Cards: rounded-xl, shadow-lg, hover:shadow-xl, hover:-translate-y-1, transition
 
-Every page must look like a real funded startup landing page: modern, highly optimized, semantic structure. No dead links or non-working buttons.
+Buttons — Primary: bg-gradient-to-r from-indigo-600 to-violet-600, text-white, hover:shadow-lg. Secondary: border border-gray-300, hover:bg-gray-50.
+
+------------------------------------------------
+VISUAL STYLE
+
+Hero: gradient background; large bold headline; supporting paragraph; two CTA buttons; optional UI mockup or illustration.
+
+Features: 6 feature cards; icon + title + description; grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6.
+
+Showcase: alternating layout — image left / text right, next section reversed (text left / image right).
+
+Testimonials: 3–6 cards; avatar; name; role; quote. (e.g. https://i.pravatar.cc/100?u=N)
+
+Pricing: 3 tiers — Starter | Pro (MOST POPULAR highlighted) | Enterprise. Pro card MUST include: badge "Most Popular"; stronger shadow; slight scale (e.g. scale-105).
+
+FAQ: Accordion. Must include: aria-expanded, aria-controls, keyboard accessible.
+
+Contact: Form with labels (name, email, message). Also include company info: email, phone, location.
+
+Footer: logo; product links; company links; social icons (Twitter, GitHub, LinkedIn with aria-label); current year copyright.
+
+------------------------------------------------
+ACCESSIBILITY
+
+Semantic HTML: header, nav, main, section, article, footer. Images must include alt text. Forms must include labels. FAQ accordion must use aria-expanded and aria-controls.
+
+------------------------------------------------
+RESPONSIVE
+
+Mobile-first. Use sm:, md:, lg:. Grids must adapt correctly.
+
+------------------------------------------------
+REQUIRED FILE STRUCTURE
+
+Return ONLY valid JSON.
+
+Preferred format (flat object, these exact keys):
+{
+  "src/App.tsx": "...",
+  "src/components/Navbar.tsx": "...",
+  "src/components/Hero.tsx": "...",
+  "src/components/Features.tsx": "...",
+  "src/components/Showcase.tsx": "...",
+  "src/components/About.tsx": "...",
+  "src/components/Testimonials.tsx": "...",
+  "src/components/Pricing.tsx": "...",
+  "src/components/FAQ.tsx": "...",
+  "src/components/Contact.tsx": "...",
+  "src/components/Footer.tsx": "...",
+  "src/components/ui/Button.tsx": "...",
+  "src/components/ui/Card.tsx": "...",
+  "src/components/ui/Container.tsx": "...",
+  "src/components/ui/Section.tsx": "...",
+  "src/index.css": "..."
+}
+
+Alternative format allowed:
+{ "files": [ { "path": "src/App.tsx", "content": "..." }, ... ] }
+
+------------------------------------------------
+IMPORTANT
+
+Return ONLY the JSON with the code files. Do NOT include explanations. Do NOT include markdown. Do NOT include comments outside the code.
+
+------------------------------------------------
+GOAL
+
+When a user enters a short prompt like "AI SaaS for marketing automation", the system must generate a complete high-quality landing page with: Hero, Features, Showcase, About, Testimonials, Pricing, FAQ, Contact, Footer — with modern SaaS design and polished UI. Every section must have visual UI. Nav links must work: use <a href="#features"> etc. and matching section id="features".
 
 ------------------------------------------------
 
@@ -70,9 +106,9 @@ NAVBAR — WORKING LINKS (CRITICAL)
 
 All navigation links and the header CTA MUST work. Use anchor links that scroll to sections.
 
-• Nav links: Use <a href="#features">Features</a>, <a href="#pricing">Pricing</a>, <a href="#about">About</a>, <a href="#team">Team</a>, <a href="#faq">FAQ</a>, <a href="#contact">Contact</a>. Do NOT use <button> for nav items or empty href="#".
+• Nav links: Use <a href="#features">Features</a>, <a href="#showcase">Product</a>, <a href="#about">About</a>, <a href="#pricing">Pricing</a>, <a href="#faq">FAQ</a>, <a href="#contact">Contact</a>. Do NOT use <button> for nav items or empty href="#".
 • Header CTA button: Use <a href="#contact">Get Started</a> or <a href="#pricing">View Pricing</a>. Never a button with no onClick/href.
-• Every section wrapper MUST have the matching id: <section id="features">, <section id="pricing">, <section id="about">, <section id="team">, <section id="faq">, <section id="contact">.
+• Every section wrapper MUST have the matching id: <section id="features">, <section id="showcase">, <section id="about">, <section id="pricing">, <section id="faq">, <section id="contact">.
 • When mapping over children or any array prop (e.g. in Card, feature lists), always guard: use (children || []).map(...) or (items || []).map(...) so the preview never hits "Cannot read properties of undefined (reading 'map')".
 
 ------------------------------------------------
@@ -100,8 +136,8 @@ Avoid flat black text on pure white. Use a premium, modern palette:
 • Accent: use a primary color for CTAs and links — e.g. bg-indigo-600 hover:bg-indigo-700, or gradient bg-gradient-to-r from-indigo-600 to-violet-600. Buttons should stand out.
 • Navbar: bg-white/90 backdrop-blur border-b border-gray-200, or dark nav with bg-slate-900 text-white.
 • Hero: either (a) light — bg-gradient-to-br from-indigo-50/30 to-white, headline text-slate-900, or (b) dark — bg-gradient-to-br from-slate-900 to-slate-800, headline text-white, subtext text-slate-300.
-• Cards: bg-white with border border-gray-200 shadow-lg shadow-gray-200/50 rounded-2xl. Use subtle shadows so sections have depth.
-• Section spacing: py-24. Container: max-w-6xl mx-auto px-6.
+• Cards: bg-white with border border-slate-200 shadow-lg shadow-slate-200/50 rounded-xl or rounded-2xl. Hover: hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300. Use subtle shadows so sections have depth.
+• Section spacing: py-16 md:py-24. Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8.
 
 ------------------------------------------------
 
@@ -124,31 +160,31 @@ src/components/Navbar.tsx
 src/components/Hero.tsx
 src/components/Features.tsx
 src/components/Showcase.tsx
-src/components/Pricing.tsx
-src/components/Testimonials.tsx
 src/components/About.tsx
-src/components/Team.tsx
+src/components/Testimonials.tsx
+src/components/Pricing.tsx
 src/components/FAQ.tsx
-src/components/CTA.tsx
 src/components/Contact.tsx
 src/components/Footer.tsx
+src/components/ui/Button.tsx
+src/components/ui/Card.tsx
+src/components/ui/Container.tsx
+src/components/ui/Section.tsx
 
 ------------------------------------------------
 
 PAGE STRUCTURE (each section must have id for nav links)
 
-Navbar (with <a href="#features"> etc. and <a href="#contact"> for CTA)
-Hero (CTAs: <a href="#contact">, <a href="#features">)
+Navbar (logo, <a href="#features"> etc., <a href="#contact"> CTA)
+Hero (id="hero", gradient, headline, 2 CTAs, hero illustration/mock)
 Features (id="features")
-Showcase
-Pricing (id="pricing")
-Testimonials
+Showcase (id="showcase")
 About (id="about")
-Team (id="team")
-FAQ (id="faq")
-CTA
+Testimonials
+Pricing (id="pricing") — Pro tier "Most Popular"
+FAQ (id="faq") — accordion with aria-expanded/aria-controls
 Contact (id="contact")
-Footer
+Footer (social aria-label, copyright year)
 
 ------------------------------------------------
 
@@ -186,15 +222,13 @@ The UI side must NOT be empty grey rectangles. Use real-looking content: section
 
 ------------------------------------------------
 
-PRICING SECTION
+PRICING SECTION (3 TIERS: STARTER, PRO RECOMMENDED, ENTERPRISE)
 
 3 pricing cards. NEVER use "Feature 1", "Feature 2", "Feature 3" as list items.
 
 grid grid-cols-1 md:grid-cols-3 gap-8
 
-Middle card must be highlighted: scale-105 border-2 border-black shadow-xl
-
-Each card: plan name, price, and a REAL feature list that matches the product (e.g. "10 guest posts/month", "Priority support", "Custom reports", "Dedicated manager"). Write 4–6 specific bullets per plan. CTA button per card.
+Tiers: Starter, Pro (recommended), Enterprise. Middle card (Pro) MUST be highlighted: scale-105 border-2 border-indigo-500 bg-gradient-to-b from-indigo-50 to-white shadow-xl shadow-indigo-500/20; add a "Recommended" or "Popular" badge above it. Each card: plan name, price (e.g. $0, $29, $99), period (/month), short description, 4–6 REAL feature bullets that match the product, CTA button (<a href="#contact">). Use rounded-xl cards.
 
 ------------------------------------------------
 
@@ -212,38 +246,21 @@ Section with id="about". Headline "About Us" or "Who We Are". MUST include at le
 
 ------------------------------------------------
 
-OUR TEAM SECTION (MANDATORY)
+FAQ SECTION (MANDATORY — 5–8 QUESTIONS, ACCESSIBLE ACCORDION)
 
-Section with id="team". Headline "Our Team" or "Meet the Team". Grid of 4 team members (grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8). Each card: rounded-2xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:-translate-y-1 transition-all; avatar <img src="https://i.pravatar.cc/160?u=NAME" alt="" className="rounded-full w-20 h-20 mx-auto mb-4 object-cover" /> (vary u=1,2,3,4 or use real-looking names in URL); name (font-bold text-slate-900 text-lg); role (text-indigo-600 font-medium text-sm); one-line bio (text-slate-600 text-sm). Use realistic names (e.g. Sarah Chen, Marcus Webb, Priya Patel, Alex Rivera) and roles (e.g. CEO, CTO, Head of Product, Head of Design). Copy should match the product. Section background: py-24 px-6 bg-white or bg-slate-50/50.
-
-------------------------------------------------
-
-FAQ SECTION (MANDATORY — ADVANCED DESIGN)
-
-Section with id="faq". Headline "Frequently Asked Questions" with subtitle "Everything you need to know." 5–7 Q&A pairs. Use useState for accordion (open index). Each item: rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow; left border accent: border-l-4 border-indigo-500 when open; question row: flex justify-between items-center p-5 cursor-pointer (font-semibold text-slate-900); toggle icon (chevron or +/−); answer: px-5 pb-5 text-slate-600 leading-relaxed. Max-width container max-w-4xl mx-auto. Section: py-24 px-6 bg-gradient-to-b from-white to-slate-50/50 or bg-slate-50. End with "Can't find an answer? <a href="#contact">Contact us</a>." No "Question 1" placeholders.
-
-------------------------------------------------
-
-CTA SECTION
-
-Centered call to action. CTA button must be <a href="#contact">.
+Section with id="faq". Headline "Frequently Asked Questions" with subtitle. 5–8 Q&A pairs. Use useState for accordion (open index). Each item: rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow; border-l-4 border-indigo-500 when open. Question: <button> or clickable div with aria-expanded={open === i} aria-controls={"faq-answer-" + i} id={"faq-question-" + i}, keyboard accessible. Answer: id={"faq-answer-" + i} aria-labelledby={"faq-question-" + i} role="region". Toggle icon (+/− or chevron). Max-w-4xl mx-auto. Section: py-16 md:py-24. End with "Can't find an answer? <a href="#contact">Contact us</a>." No placeholder questions.
 
 ------------------------------------------------
 
 CONTACT SECTION (MANDATORY)
 
-Section with id="contact". Headline "Contact Us" or "Get in Touch". Include EITHER (a) contact form: name, email, message, submit button (use <form>, preventDefault on submit), OR (b) contact info: email (mailto:), phone, address in cards. Style: clean cards, good spacing.
+Section with id="contact". Headline "Contact Us" or "Get in Touch". MUST include: (1) Contact form with name, email, message fields and submit button (use <form onSubmit={e => e.preventDefault()}>, <label htmlFor="..."> for each input, <input id="...">, <textarea>). (2) Company info: email (mailto:), phone (tel:), and/or location in a card or list. Use rounded-xl cards, good spacing (e.g. grid lg:grid-cols-2 for form + info).
 
 ------------------------------------------------
 
-FOOTER
+FOOTER (MANDATORY)
 
-4 columns
-
-Product
-Company
-Resources
-Legal
+Logo (link or text) at top or left. Then 4 columns or grid: Product (e.g. Features, Pricing), Company (About, Contact), Resources (optional), Legal (Terms, Privacy). Social icons: Twitter/X, GitHub, LinkedIn (use <a href="..." aria-label="..."> with icon or text). Copyright line at bottom: © {new Date().getFullYear()} Company Name. Use bg-slate-900 text-slate-300 or bg-slate-100 border-t; padding py-12 or py-16.
 
 ------------------------------------------------
 
@@ -258,9 +275,7 @@ CONTENT RULES — NO PLACEHOLDERS
 
 PROMPT EXPANSION
 
-If the user prompt is short, expand it automatically into a full SaaS startup landing page with rich UI sections.
-
-Never generate minimal layouts.
+If the user prompt is short (e.g. "AI SaaS for marketing automation", "Landing page for a CRM"), expand it into a FULL high-end landing page: infer the product/service, write all headlines and copy around that theme, and generate every section (Hero, Features, Showcase/Product, About, Testimonials, Pricing, FAQ, Contact, Footer). Never generate minimal or incomplete layouts.
 
 ------------------------------------------------
 
@@ -278,9 +293,7 @@ CRITICAL: Your response must be ONLY the JSON object. No markdown, no code fence
   { "path":"src/components/Pricing.tsx","content":"..." },
   { "path":"src/components/Testimonials.tsx","content":"..." },
   { "path":"src/components/About.tsx","content":"..." },
-  { "path":"src/components/Team.tsx","content":"..." },
   { "path":"src/components/FAQ.tsx","content":"..." },
-  { "path":"src/components/CTA.tsx","content":"..." },
   { "path":"src/components/Contact.tsx","content":"..." },
   { "path":"src/components/Footer.tsx","content":"..." },
   { "path":"src/components/ui/Button.tsx","content":"..." },
@@ -425,6 +438,25 @@ function tryCloseJson(s: string): string {
     depth--;
   }
   return trimmed + suffix;
+}
+
+/** Normalize API response to files array. Accepts either { files: [{ path, content }] } or flat { "src/App.tsx": "...", ... }. */
+function normalizeToFilesArray(parsed: any): { path: string; content: string }[] {
+  if (!parsed || typeof parsed !== "object") return [];
+  if (Array.isArray(parsed.files)) {
+    return parsed.files
+      .filter((f: any) => f && typeof f.path === "string" && typeof f.content === "string")
+      .map((f: any) => ({ path: String(f.path).trim(), content: String(f.content) }));
+  }
+  const flat = Object.entries(parsed)
+    .filter(
+      ([k, v]) =>
+        typeof v === "string" &&
+        k.length > 0 &&
+        (k.includes("/") || k.endsWith(".tsx") || k.endsWith(".ts") || k.endsWith(".css") || k.endsWith(".jsx"))
+    )
+    .map(([path, content]) => ({ path: String(path).trim(), content: String(content) }));
+  return flat.length > 0 ? flat : [];
 }
 
 /** Safety parser: strip code fences, trim, extract JSON, repair, then parse. */
@@ -637,17 +669,12 @@ function ensureAboutFaqContact(
 ): { files: { path: string; content: string }[]; appContent: string } {
   let files = [...allFiles];
   const aboutFile = files.find((f) => f.path === "src/components/About.tsx");
-  const teamFile = files.find((f) => f.path === "src/components/Team.tsx");
   const faqFile = files.find((f) => f.path === "src/components/FAQ.tsx");
   const contactFile = files.find((f) => f.path === "src/components/Contact.tsx");
 
   if (!aboutFile || isStubContent(aboutFile.content)) {
     files = files.filter((f) => f.path !== "src/components/About.tsx");
     files.push({ path: "src/components/About.tsx", content: DEFAULT_ABOUT_TSX });
-  }
-  if (!teamFile || isStubContent(teamFile.content)) {
-    files = files.filter((f) => f.path !== "src/components/Team.tsx");
-    files.push({ path: "src/components/Team.tsx", content: DEFAULT_TEAM_TSX });
   }
   if (!faqFile || isStubContent(faqFile.content)) {
     files = files.filter((f) => f.path !== "src/components/FAQ.tsx");
@@ -663,18 +690,13 @@ function ensureAboutFaqContact(
     out = out.replace(/(<\/Testimonials>)/, "$1\n      <About />");
     if (!out.includes("<About")) out = out.replace(/(<Testimonials\s*\/>)/, "$1\n      <About />");
   }
-  if (!out.includes("<Team") && !out.includes("<Team />")) {
-    out = out.replace(/(<About\s*\/>)/, "$1\n      <Team />");
-    if (!out.includes("<Team")) out = out.replace(/(<\/About>)/, "$1\n      <Team />");
-  }
   if (!out.includes("<FAQ") && !out.includes("<FAQ />")) {
-    out = out.replace(/(<Team\s*\/>)/, "$1\n      <FAQ />");
-    if (!out.includes("<FAQ")) out = out.replace(/(<\/Team>)/, "$1\n      <FAQ />");
+    out = out.replace(/(<About\s*\/>)/, "$1\n      <FAQ />");
+    if (!out.includes("<FAQ")) out = out.replace(/(<\/About>)/, "$1\n      <FAQ />");
   }
   if (!out.includes("<Contact") && !out.includes("<Contact />")) {
-    out = out.replace(/(<\/CTA>)/, "$1\n      <Contact />");
-    if (!out.includes("<Contact")) out = out.replace(/(<\/CtaSection>)/, "$1\n      <Contact />");
-    if (!out.includes("<Contact")) out = out.replace(/(<Footer)/, "<Contact />\n      $1");
+    out = out.replace(/(<Footer)/, "<Contact />\n      $1");
+    if (!out.includes("<Contact")) out = out.replace(/(<\/FAQ>)/, "$1\n      <Contact />");
   }
   return { files, appContent: out };
 }
@@ -848,15 +870,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const parsed = parseResult.parsed;
     const name = String(parsed.name || "app").trim();
     const description = typeof parsed.description === "string" ? parsed.description : prompt;
-    let files = Array.isArray(parsed.files)
-      ? parsed.files
-          .filter((f: any) => f && typeof f.path === "string" && typeof f.content === "string")
-          .map((f: any) => ({
-            path: String(f.path).trim(),
-            content: String(f.content),
-            type: (f.type === "directory" ? "directory" : "file") as "file" | "directory",
-          }))
-      : [];
+    let files = normalizeToFilesArray(parsed).map((f) => ({
+      path: f.path,
+      content: f.content,
+      type: "file" as const,
+    }));
 
     if (files.length === 0) {
       return res.status(500).json({ error: true, message: "No valid files in response" });
