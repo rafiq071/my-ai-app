@@ -258,32 +258,23 @@ export default function App() {
         }),
       });
       clearTimeout(timeoutId);
-      const text = await res.text();
-      let json: { error?: string; message?: string; project?: { files?: unknown[] }; files?: unknown[] } = {};
-      try {
-        json = text ? JSON.parse(text) : {};
-      } catch {
-        json = {};
-      }
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const fromBody = typeof json?.error === "string" ? json.error : typeof json?.message === "string" ? json.message : null;
         const msg =
           res.status === 404
             ? "API not found. Run 'npm run dev' (starts both app and API) or run 'npm run dev:api' in another terminal."
-            : fromBody || res.statusText || (res.status === 500
-              ? "Server error (500). Open your deployment URL in a new tab and visit /api/generate — it will show whether OPENAI_API_KEY is set. Also check Vercel → Deployments → your deployment → Functions for the error log."
-              : `Request failed (${res.status}).`);
+            : json.message || res.statusText || "Generation failed";
         setAiError(msg);
         return;
       }
-      const files = (json.project?.files ?? json.files ?? []) as { path?: string; name?: string; content?: string }[];
+      const files = json.project?.files ?? json.files ?? [];
       if (files.length === 0) {
         setAiError("No files returned");
         return;
       }
       for (const file of files) {
-        const path = file.path || file.name || "";
-        if (!path || isConfigPath(path)) continue;
+        const path = file.path || file.name;
+        if (isConfigPath(path)) continue;
         const content = file.content ?? "";
         const existing = projectFiles.find((p) => p.path === path);
         if (existing) {
@@ -357,8 +348,7 @@ export default function App() {
       clearTimeout(timeoutId);
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const fromBody = typeof json?.error === "string" ? json.error : typeof json?.message === "string" ? json.message : null;
-        setAiError(fromBody || res.statusText || (res.status === 500 ? "Server error. Try again." : `Request failed (${res.status}).`));
+        setAiError(json.message || res.statusText || "Modification failed");
         return;
       }
       const files = json.project?.files ?? json.files ?? [];
