@@ -702,14 +702,26 @@ function ensureAboutFaqContact(
   return { files, appContent: out };
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+async function handleRequest(req: VercelRequest, res: VercelResponse) {
+  // Allow GET so you can check from browser: open https://your-app.vercel.app/api/generate
+  if (req.method === "GET") {
+    const hasKey = !!process.env.OPENAI_API_KEY;
+    return res.status(200).json({
+      ok: true,
+      hasApiKey: hasKey,
+      message: hasKey ? "OPENAI_API_KEY is set. Generation should work." : "OPENAI_API_KEY is missing. Add it in Vercel → Project Settings → Environment Variables and redeploy.",
+    });
+  }
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ success: false, error: "OPENAI_API_KEY is not set. Add it in your Vercel project environment variables." });
+    return res.status(500).json({
+      success: false,
+      error: "OPENAI_API_KEY is not set. In Vercel: Project Settings → Environment Variables → add OPENAI_API_KEY (your OpenAI key), then redeploy.",
+    });
   }
 
   let body: { prompt?: string; projectId?: string; existingFiles?: { path: string; content: string }[] };
@@ -847,5 +859,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: false,
       error: message,
     });
+  }
+}
+
+/** Ensure every response is JSON so the client never sees HTML error pages. */
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  try {
+    return await handleRequest(req, res);
+  } catch (err) {
+    console.error("[api/generate] Unhandled error:", err);
+    const message = getErrorMessage(err);
+    try {
+      return res.status(500).json({ success: false, error: message });
+    } catch {
+      // res may already be sent
+    }
   }
 }
