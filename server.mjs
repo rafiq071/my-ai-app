@@ -1059,8 +1059,19 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify(result));
   } catch (err) {
     console.error("[AI] Generate error:", err?.message || err);
-    const rawMsg = err?.message ?? (err && typeof err === "object" && "message" in err ? err.message : undefined);
-    let message = typeof rawMsg === "string" ? rawMsg : String(err || "Generation failed");
+    let message = "Generation failed";
+    if (err instanceof Error && err.message) {
+      message = err.message;
+    } else if (err && typeof err === "object") {
+      const o = err;
+      if (typeof o.message === "string" && o.message) message = o.message;
+      else if (o.error && typeof o.error === "object" && typeof o.error.message === "string" && o.error.message)
+        message = o.error.message;
+    }
+    if (message === "Generation failed" && err != null) {
+      const s = String(err);
+      if (s && s !== "[object Object]") message = s;
+    }
     const is401 = err?.status === 401 || String(message).includes("401");
     const isInvalidKey =
       err?.code === "invalid_api_key" ||

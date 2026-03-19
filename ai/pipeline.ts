@@ -9,6 +9,23 @@ export { plan } from "./planner";
 export { generate } from "./generator";
 export { review } from "./reviewer";
 
+/** Extract a string from any thrown value (including OpenAI APIError). */
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error && err.message) return err.message;
+  if (err && typeof err === "object") {
+    const o = err as Record<string, unknown>;
+    if (typeof o.message === "string" && o.message) return o.message;
+    const inner = o.error;
+    if (inner && typeof inner === "object" && typeof (inner as Record<string, unknown>).message === "string") {
+      const msg = (inner as Record<string, unknown>).message as string;
+      if (msg) return msg;
+    }
+  }
+  const s = String(err);
+  if (s && s !== "[object Object]") return s;
+  return "Unknown error";
+}
+
 /**
  * Run the full Plan → Generate → Review pipeline.
  * Every step wrapped in try/catch; errors logged and returned with a clear reason.
@@ -26,10 +43,10 @@ export async function runPipeline(
       projectPlan = await plan(prompt, openai, log);
     } catch (err) {
       console.error("[Pipeline Error] Planner failed", err);
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = getErrorMessage(err) || "Planner failed";
       return {
         status: "error",
-        error: msg || "Planner failed",
+        error: msg,
         files_created: 0,
         fixes_applied: 0,
         files: [],
@@ -42,10 +59,10 @@ export async function runPipeline(
       generatedFiles = await generate(prompt, projectPlan, openai, log);
     } catch (err) {
       console.error("[Pipeline Error] Generator failed", err);
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = getErrorMessage(err) || "Generator failed";
       return {
         status: "error",
-        error: msg || "Generator failed",
+        error: msg,
         files_created: 0,
         fixes_applied: 0,
         files: [],
@@ -58,10 +75,10 @@ export async function runPipeline(
       reviewed = await review(generatedFiles, openai, log);
     } catch (err) {
       console.error("[Pipeline Error] Reviewer failed", err);
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = getErrorMessage(err) || "Reviewer failed";
       return {
         status: "error",
-        error: msg || "Reviewer failed",
+        error: msg,
         files_created: generatedFiles.length,
         fixes_applied: 0,
         files: generatedFiles,
@@ -77,10 +94,10 @@ export async function runPipeline(
     };
   } catch (error) {
     console.error("[Pipeline Error]", error);
-    const message = error instanceof Error ? error.message : String(error);
+    const message = getErrorMessage(error) || "Unknown pipeline failure";
     return {
       status: "error",
-      error: message || "Unknown pipeline failure",
+      error: message,
       files_created: 0,
       fixes_applied: 0,
       files: [],

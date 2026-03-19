@@ -2,6 +2,23 @@ import OpenAI from "openai";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { runPipeline } from "../ai/pipeline";
 
+/** Extract a user-facing string from any thrown value (including OpenAI APIError). */
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error && err.message) return err.message;
+  if (err && typeof err === "object") {
+    const o = err as Record<string, unknown>;
+    if (typeof o.message === "string" && o.message) return o.message;
+    const inner = o.error;
+    if (inner && typeof inner === "object" && typeof (inner as Record<string, unknown>).message === "string") {
+      const msg = (inner as Record<string, unknown>).message as string;
+      if (msg) return msg;
+    }
+  }
+  const s = String(err);
+  if (s && s !== "[object Object]") return s;
+  return "Something went wrong. Please try again.";
+}
+
 const PLAN_PROMPT = `You are a product designer. Given a user request for a website, output a JSON plan only. No markdown.
 
 Schema (return exactly this JSON shape):
@@ -687,24 +704,24 @@ function ensureAboutFaqContact(
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: true, message: "Method not allowed" });
+    return res.status(405).json({ success: false, error: "Method not allowed" });
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: true, message: "OPENAI_API_KEY not set" });
+    return res.status(500).json({ success: false, error: "OPENAI_API_KEY is not set. Add it in your Vercel project environment variables." });
   }
 
   let body: { prompt?: string; projectId?: string; existingFiles?: { path: string; content: string }[] };
   try {
     body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
   } catch {
-    return res.status(400).json({ error: true, message: "Invalid JSON body" });
+    return res.status(400).json({ success: false, error: "Invalid JSON body" });
   }
 
   const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
   if (!prompt) {
-    return res.status(400).json({ error: true, message: "prompt is required" });
+    return res.status(400).json({ success: false, error: "prompt is required" });
   }
 
   const existingFiles = Array.isArray(body.existingFiles) ? body.existingFiles : [];
@@ -714,8 +731,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const appFile = existingFiles.find((f) => f.path === "src/App.tsx" || f.path === "App.tsx");
     if (!appFile || typeof appFile.content !== "string") {
       return res.status(400).json({
-        error: true,
-        message: "Modify mode requires existing src/App.tsx. Generate a landing page first.",
+        success: false,
+        error: "Modify mode requires existing src/App.tsx. Generate a landing page first.",
       });
     }
     try {
@@ -748,7 +765,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         parseResult = parseJsonFromAI(retryText);
       }
       if (!parseResult.ok || !parseResult.parsed) {
-        return res.status(500).json({ error: true, message: "AI did not return valid JSON for modify." });
+        return res.status(500).json({ success: false, error: "AI did not return valid JSON for modify." });
       }
       const parsed = parseResult.parsed;
       const files = Array.isArray(parsed.files)
@@ -757,7 +774,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           )
         : [];
       if (files.length === 0) {
-        return res.status(500).json({ error: true, message: "No updated App.tsx in response." });
+        return res.status(500).json({ success: false, error: "No updated App.tsx in response." });
       }
       let appContent = String(files[0].content);
       appContent = stripMarkdownFromCode(appContent);
@@ -773,8 +790,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     } catch (err) {
       console.error("Modify error:", err);
-      const message = err instanceof Error ? err.message : "Modification failed";
-      return res.status(500).json({ error: true, message });
+      const message = getErrorMessage(err);
+      return res.status(500).json({ success: false, error: message });
     }
   }
 
@@ -783,14 +800,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const pipeline = await runPipeline(prompt, openai, console.log);
 
     if (pipeline.status === "error") {
-      const errMsg = (pipeline.error && String(pipeline.error).trim()) || "Generation failed";
+      const errMsg = (pipeline.error && String(pipeline.error).trim()) || "Generation failed. Check server logs for details.";
       return res.status(500).json({
         success: false,
         error: errMsg,
       });
     }
     if (!pipeline.files?.length) {
-      const errMsg = (pipeline.error && String(pipeline.error).trim()) || "Pipeline produced no files";
+      const errMsg = (pipeline.error && String(pipeline.error).trim()) || "Pipeline produced no files. Try a different prompt or check your API key.";
       return res.status(500).json({
         success: false,
         error: errMsg,
@@ -825,10 +842,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     console.error("Generate error:", err);
-    const message = err instanceof Error ? err.message : String(err);
+    const message = getErrorMessage(err);
     return res.status(500).json({
       success: false,
-      error: message || "Generation failed",
+      error: message,
     });
   }
 }

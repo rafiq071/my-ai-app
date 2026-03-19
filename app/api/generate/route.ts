@@ -16,6 +16,22 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { createProjectWithId } from '@/lib/project-db-server'
 import { createOpenAICompletionStream } from '@/lib/ai-client'
 
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error && err.message) return err.message
+  if (err && typeof err === 'object') {
+    const o = err as Record<string, unknown>
+    if (typeof o.message === 'string' && o.message) return o.message
+    const inner = o.error
+    if (inner && typeof inner === 'object' && typeof (inner as Record<string, unknown>).message === 'string') {
+      const msg = (inner as Record<string, unknown>).message as string
+      if (msg) return msg
+    }
+  }
+  const s = String(err)
+  if (s && s !== '[object Object]') return s
+  return 'Generation failed. Please try again.'
+}
+
 const SYSTEM_PROMPT = `You are an expert product designer and front-end developer. Generate HIGH-QUALITY, conversion-optimized single-page websites at the level of Lovable, Stripe, Linear, Vercel, and Notion. Every pixel should feel intentional; the result should feel like a shipped product, not a template.
 
 IMPORTANT RULES:
@@ -409,7 +425,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Generate failed:", error);
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return NextResponse.json({ error: true, message }, { status: 500 })
+    const message = getErrorMessage(error);
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

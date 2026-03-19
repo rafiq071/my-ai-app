@@ -260,10 +260,11 @@ export default function App() {
       clearTimeout(timeoutId);
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-const msg =
-            res.status === 404
-              ? "API not found. Run 'npm run dev' (starts both app and API) or run 'npm run dev:api' in another terminal."
-              : (typeof json.error === "string" ? json.error : json.message) || res.statusText || "Generation failed";
+        const fromBody = typeof json?.error === "string" ? json.error : typeof json?.message === "string" ? json.message : null;
+        const msg =
+          res.status === 404
+            ? "API not found. Run 'npm run dev' (starts both app and API) or run 'npm run dev:api' in another terminal."
+            : fromBody || res.statusText || (res.status === 500 ? "Server error. Check your API key and try again." : `Request failed (${res.status}).`);
         setAiError(msg);
         return;
       }
@@ -348,11 +349,8 @@ const msg =
       clearTimeout(timeoutId);
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setAiError(
-          (typeof json.error === "string" ? json.error : json.message) ||
-            res.statusText ||
-            "Modification failed"
-        );
+        const fromBody = typeof json?.error === "string" ? json.error : typeof json?.message === "string" ? json.message : null;
+        setAiError(fromBody || res.statusText || (res.status === 500 ? "Server error. Try again." : `Request failed (${res.status}).`));
         return;
       }
       const files = json.project?.files ?? json.files ?? [];
