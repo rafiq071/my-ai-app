@@ -88,24 +88,24 @@ const SERVICES = [
 
 const TESTIMONIALS = [
   {
-    quote: 'We cut our time to market in half. The quality of the generated code is impressive.',
+    quote: 'Barbar has transformed our marketing strategy. We saw a 50% increase in conversions!',
     name: 'Sarah Chen',
-    role: 'Head of Product, TechFlow',
+    role: 'Marketing Director, TechFlow',
     avatar: 'https://i.pravatar.cc/100?u=sarah',
   },
   {
-    quote: 'Best developer experience we have used. Our team ships features in days, not weeks.',
+    quote: 'The analytics tools are incredibly powerful. We can make data-driven decisions like never before.',
     name: 'Marcus Webb',
-    role: 'CTO, ScaleUp',
+    role: 'CEO, StartUpInc',
     avatar: 'https://i.pravatar.cc/100?u=marcus',
   },
   {
-    quote: 'Clean code, great defaults, and the support team is incredibly responsive.',
+    quote: "Barbar's automation features have saved us countless hours of work.",
     name: 'Priya Patel',
-    role: 'Engineering Lead, DataDrive',
+    role: 'CMO, Creatify',
     avatar: 'https://i.pravatar.cc/100?u=priya',
   },
-]
+];
 
 const PRICING_TIERS = [
   {

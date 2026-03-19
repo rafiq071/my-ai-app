@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { runPipeline } from "../ai/pipeline";
 
 const PLAN_PROMPT = `You are a product designer. Given a user request for a website, output a JSON plan only. No markdown.
 
@@ -777,105 +778,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  const context =
-    existingFiles.length > 0
-      ? `\n\nCurrent project files (for context only):\n${existingFiles
-          .slice(0, 20)
-          .map((f: any) => `--- ${f.path} ---\n${(f.content || "").slice(0, 500)}`)
-          .join("\n")}`
-      : "";
-
   try {
     const openai = new OpenAI({ apiKey });
+    const pipelineResult = await runPipeline(prompt, openai, (msg) => console.log(msg));
 
-    let planJson: any = null;
-    try {
-      const planCompletion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: PLAN_PROMPT },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.3,
-        max_tokens: 800,
-      });
-      const planText = planCompletion.choices?.[0]?.message?.content ?? "";
-      const planResult = parseJsonFromAI(planText);
-      if (planResult.ok && planResult.parsed) planJson = planResult.parsed;
-    } catch {
-      //
-    }
-
-    const userMessageForGenerate = planJson
-      ? `Plan: ${JSON.stringify(planJson)}\n\nUser request: ${prompt}${context}`
-      : prompt + context;
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "system", content: TEMPLATE_HINT },
-        { role: "user", content: userMessageForGenerate },
-      ],
-      temperature: 0.7,
-      max_tokens: 16000,
-      response_format: { type: "json_object" },
-    });
-
-    let raw = completion.choices[0]?.message?.content ?? "";
-    let parseResult = parseJsonFromAI(raw);
-    if (!parseResult.ok || !parseResult.parsed) {
-      const retryMessage =
-        "Return ONLY valid JSON. No markdown code fences, no text before or after. Start with { and end with }. Your previous response could not be parsed.\n\nUser request: " +
-        userMessageForGenerate;
-      const retryCompletion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "system", content: "Output MUST be a single JSON object only. No markdown, no explanations." },
-          { role: "user", content: retryMessage },
-        ],
-        temperature: 0.3,
-        max_tokens: 16000,
-        response_format: { type: "json_object" },
-      });
-      raw = retryCompletion.choices[0]?.message?.content ?? "";
-      parseResult = parseJsonFromAI(raw);
-    }
-    if (!parseResult.ok || !parseResult.parsed) {
+    if (pipelineResult.status === "error" || !pipelineResult.files?.length) {
       return res.status(500).json({
         error: true,
-        message: "Model did not return valid JSON",
-        raw: raw.slice(0, 500),
+        message: pipelineResult.error ?? "Pipeline produced no files",
       });
     }
 
-    const parsed = parseResult.parsed;
-    const name = String(parsed.name || "app").trim();
-    const description = typeof parsed.description === "string" ? parsed.description : prompt;
-    let files = normalizeToFilesArray(parsed).map((f) => ({
+    let files: { path: string; content: string; type: "file" }[] = pipelineResult.files.map((f) => ({
       path: f.path,
       content: f.content,
       type: "file" as const,
     }));
 
-    if (files.length === 0) {
-      return res.status(500).json({ error: true, message: "No valid files in response" });
-    }
-
-    files = autoFixGeneratedFiles(files);
-
-    const appFile = files.find((f: any) => f.path === "src/App.tsx" || f.path === "App.tsx");
+    const appFile = files.find((f) => f.path === "src/App.tsx" || f.path === "App.tsx");
     if (appFile && typeof appFile.content === "string") {
       const { files: filesWithSections, appContent: patchedApp } = ensureAboutFaqContact(files, appFile.content);
-      files = filesWithSections;
-      const idx = files.findIndex((f: any) => f.path === "src/App.tsx" || f.path === "App.tsx");
+      files = filesWithSections.map((f) => ({ ...f, type: "file" as const }));
+      const idx = files.findIndex((f) => f.path === "src/App.tsx" || f.path === "App.tsx");
       if (idx !== -1) files[idx] = { ...files[idx], content: patchedApp };
     }
 
+    const name = "app";
+    const description = prompt;
     return res.status(200).json({
       success: true,
       project: { name, description, files },
+      pipeline: {
+        status: pipelineResult.status,
+        files_created: pipelineResult.files_created,
+        fixes_applied: pipelineResult.fixes_applied,
+      },
     });
   } catch (err) {
     console.error("Generate error:", err);
