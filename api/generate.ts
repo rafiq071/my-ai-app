@@ -783,15 +783,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const pipeline = await runPipeline(prompt, openai, console.log);
 
     if (pipeline.status === "error") {
+      const errMsg = (pipeline.error && String(pipeline.error).trim()) || "Generation failed";
       return res.status(500).json({
         success: false,
-        error: pipeline.error || "Generation failed",
+        error: errMsg,
       });
     }
     if (!pipeline.files?.length) {
+      const errMsg = (pipeline.error && String(pipeline.error).trim()) || "Pipeline produced no files";
       return res.status(500).json({
         success: false,
-        error: pipeline.error || "Pipeline produced no files",
+        error: errMsg,
       });
     }
     const pipelineResult = pipeline;

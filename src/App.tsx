@@ -263,7 +263,7 @@ export default function App() {
 const msg =
             res.status === 404
               ? "API not found. Run 'npm run dev' (starts both app and API) or run 'npm run dev:api' in another terminal."
-              : json.error || json.message || res.statusText || "Generation failed";
+              : (typeof json.error === "string" ? json.error : json.message) || res.statusText || "Generation failed";
         setAiError(msg);
         return;
       }
@@ -348,7 +348,11 @@ const msg =
       clearTimeout(timeoutId);
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setAiError(json.message || res.statusText || "Modification failed");
+        setAiError(
+          (typeof json.error === "string" ? json.error : json.message) ||
+            res.statusText ||
+            "Modification failed"
+        );
         return;
       }
       const files = json.project?.files ?? json.files ?? [];

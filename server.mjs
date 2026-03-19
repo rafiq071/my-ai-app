@@ -1059,25 +1059,22 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify(result));
   } catch (err) {
     console.error("[AI] Generate error:", err?.message || err);
-    let message = "Generation failed";
-    const is401 = err?.status === 401 || (err?.message && String(err.message).includes("401"));
+    const rawMsg = err?.message ?? (err && typeof err === "object" && "message" in err ? err.message : undefined);
+    let message = typeof rawMsg === "string" ? rawMsg : String(err || "Generation failed");
+    const is401 = err?.status === 401 || String(message).includes("401");
     const isInvalidKey =
       err?.code === "invalid_api_key" ||
-      (err?.message && /invalid|incorrect.*api key/i.test(String(err.message)));
+      /invalid|incorrect.*api key/i.test(String(message));
     if (is401 || isInvalidKey) {
       message =
         "OpenAI rejected the API key. Try: 1) Create a new key at https://platform.openai.com/account/api-keys (Create new secret key). 2) If you use a project key (sk-proj-...), add OPENAI_ORG_ID and OPENAI_PROJECT_ID to .env (find them in your project’s Settings in the OpenAI dashboard). 3) Put the key in .env as OPENAI_API_KEY=sk-... with no quotes. 4) Restart the server (npm run dev).";
-    } else if (err instanceof Error) {
-      message = err.message;
-      if (err.message && err.message.includes("Internal server error")) {
-        message = "OpenAI API is temporarily unavailable. Try again in a moment.";
-      }
-      if (err.message && (err.message.includes("429") || err.message.includes("rate limit"))) {
-        message = "Rate limit exceeded. Wait a moment and try again.";
-      }
+    } else if (message.includes("Internal server error")) {
+      message = "OpenAI API is temporarily unavailable. Try again in a moment.";
+    } else if (message.includes("429") || message.includes("rate limit")) {
+      message = "Rate limit exceeded. Wait a moment and try again.";
     }
     res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: true, message }));
+    res.end(JSON.stringify({ success: false, error: message }));
   }
 });
 
