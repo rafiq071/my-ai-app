@@ -3,6 +3,7 @@
  * Run: npm run dev (runs both Vite and this) or npm run dev:api in a separate terminal.
  * Set OPENAI_API_KEY in .env for AI generation.
  */
+import "dotenv/config";
 import http from "http";
 import path from "path";
 import fs from "fs";
@@ -53,6 +54,17 @@ if (!process.env.OPENAI_API_KEY || !process.env.OPENAI_API_KEY.trim()) {
 const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || "").replace(/\r/g, "").trim();
 if (OPENAI_API_KEY) process.env.OPENAI_API_KEY = OPENAI_API_KEY;
 
+// Single OpenAI client (lazy init after env is loaded)
+let _openaiClient = null;
+async function getOpenAI() {
+  if (!_openaiClient) {
+    const { default: OpenAI } = await import("openai");
+    _openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return _openaiClient;
+}
+
+console.log("[ENV] OPENAI_API_KEY loaded:", !!OPENAI_API_KEY);
 if (!OPENAI_API_KEY) {
   console.warn(
     "\n⚠ OPENAI_API_KEY is not set. Add it to a .env file in the project root, e.g:\n   OPENAI_API_KEY=sk-your-key-here\n   Get a key from https://platform.openai.com/api-keys\n   Then restart the server. Generate will work after that.\n"
@@ -593,38 +605,39 @@ export default function Team() {
   );
 }`;
 
-/** Default FAQ section — advanced accordion design */
-const DEFAULT_FAQ_TSX = \`import React, { useState } from "react";
+/** Default FAQ section — safe string (no unescaped backticks) */
+const DEFAULT_FAQ_TSX = String.raw`
+import React, { useState } from "react";
+
 export default function FAQ() {
   const [open, setOpen] = useState(null);
+
   const items = [
-    { q: "How do I get started?", a: "Sign up for a free account, describe your project, and our AI will generate a first version in minutes. You can edit and deploy from there." },
-    { q: "What payment methods do you accept?", a: "We accept all major credit cards and PayPal. Invoicing is available for Team and Enterprise plans." },
-    { q: "Can I cancel anytime?", a: "Yes. You can cancel your subscription at any time. You will keep access until the end of your billing period." },
-    { q: "Do you offer support?", a: "Free tier includes community support. Pro and Team plans include priority email support and optional onboarding calls." },
-    { q: "Is my data secure?", a: "Yes. We use industry-standard encryption and do not share your data with third parties. You can export or delete your data anytime." },
+    { q: "What is this platform?", a: "This is an AI generated website." },
+    { q: "Can I customize it?", a: "Yes. All components are editable." },
+    { q: "Is it production ready?", a: "Yes. It generates clean React code." }
   ];
+
   return (
-    <section id="faq" className="py-24 px-6 bg-gradient-to-b from-white to-slate-50/50">
-      <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">Frequently Asked Questions</h2>
-        <p className="text-slate-600 mb-10">Everything you need to know.</p>
-        <div className="space-y-4">
-          {items.map((item, i) => (
-            <div key={i} className={\\\`rounded-2xl border overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow \\\${open === i ? "border-l-4 border-l-indigo-500 border-slate-200" : "border-slate-200"}\\\`}>
-              <button type="button" onClick={() => setOpen(open === i ? null : i)} className="w-full flex items-center justify-between gap-4 p-5 text-left">
-                <span className="font-semibold text-slate-900">{item.q}</span>
-                <span className="text-xl text-indigo-500 flex-shrink-0 font-light">{open === i ? "−" : "+"}</span>
-              </button>
-              {open === i && <div className="px-5 pb-5 pt-0 text-slate-600 leading-relaxed border-t border-slate-100">{item.a}</div>}
-            </div>
-          ))}
-        </div>
-        <p className="mt-10 text-center text-slate-600">Can't find an answer? <a href="#contact" className="text-indigo-600 font-semibold hover:underline">Contact us</a>.</p>
+    <section id="faq" className="py-20">
+      <h2 className="text-3xl font-bold text-center mb-10">FAQ</h2>
+      <div className="max-w-2xl mx-auto">
+        {items.map((item, i) => (
+          <div key={i} className="border-b py-4">
+            <button
+              className="font-semibold w-full text-left"
+              onClick={() => setOpen(open === i ? null : i)}
+            >
+              {item.q}
+            </button>
+            {open === i && <p className="mt-2 text-gray-600">{item.a}</p>}
+          </div>
+        ))}
       </div>
     </section>
   );
-}\`;
+}
+`;
 
 /** Default Contact section with form — injected when AI omits or stubs it */
 const DEFAULT_CONTACT_TSX = `import React from "react";
@@ -795,12 +808,7 @@ async function handleGenerate(body) {
 
   console.log("[AI] Generate request, modify:", !!body.modify);
 
-  const { default: OpenAI } = await import("openai");
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    organization: process.env.OPENAI_ORG_ID || undefined,
-    project: process.env.OPENAI_PROJECT_ID || undefined,
-  });
+  const openai = await getOpenAI();
 
   const existingFiles = Array.isArray(body.existingFiles) ? body.existingFiles : [];
   const isModify = body.modify === true;

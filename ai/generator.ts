@@ -21,7 +21,11 @@ Preferred — flat object, file path as key, content as string:
 Alternative — files array:
 { "files": [ { "path": "src/App.tsx", "content": "..." }, ... ] }`;
 
-function normalizeToFiles(parsed: Record<string, unknown>, plan: ProjectPlan): GeneratedFile[] {
+/**
+ * Normalize model output to GeneratedFile[].
+ * Accepts either: { "src/App.tsx": "...", ... } or { "files": [{ "path": "src/App.tsx", "content": "..." }] }.
+ */
+function normalizeToFiles(parsed: Record<string, unknown>, _plan: ProjectPlan): GeneratedFile[] {
   if (Array.isArray(parsed.files)) {
     return (parsed.files as { path?: string; content?: string }[])
       .filter((f) => f && typeof f.path === "string" && typeof f.content === "string")

@@ -21,6 +21,15 @@ function applyRuleFixes(files: GeneratedFile[]): { files: GeneratedFile[]; fixes
       if (!content.includes("export default")) {
         content = content.replace(/^(function\s+\w+)\s*\(/m, "export default $1(");
       }
+      // If still no default export, try to append export default ComponentName
+      if (!content.includes("export default")) {
+        const fnMatch = content.match(/^(?:export\s+)?(?:function|const)\s+(\w+)\s*[=(]/m);
+        const name = fnMatch?.[1];
+        if (name && /^[A-Z]/.test(name)) {
+          content = content.trimEnd() + "\nexport default " + name + ";\n";
+          fixesApplied++;
+        }
+      }
       if (content.includes("export default")) fixesApplied++;
     }
 

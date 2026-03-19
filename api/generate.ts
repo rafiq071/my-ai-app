@@ -1,6 +1,12 @@
+import "dotenv/config";
 import OpenAI from "openai";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { runPipeline } from "../ai/pipeline";
+
+// Initialize once so env is loaded (dotenv/config above). On Vercel, set OPENAI_API_KEY in Project Settings → Environment Variables.
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 /** Extract a user-facing string from any thrown value (including OpenAI APIError). */
 function getErrorMessage(err: unknown): string {
@@ -587,37 +593,38 @@ export default function Team() {
   );
 }`;
 
-const DEFAULT_FAQ_TSX = `import React, { useState } from "react";
+const DEFAULT_FAQ_TSX = String.raw`
+import React, { useState } from "react";
+
 export default function FAQ() {
   const [open, setOpen] = useState(null);
+
   const items = [
-    { q: "How do I get started?", a: "Sign up for a free account, describe your project, and our AI will generate a first version in minutes. You can edit and deploy from there." },
-    { q: "What payment methods do you accept?", a: "We accept all major credit cards and PayPal. Invoicing is available for Team and Enterprise plans." },
-    { q: "Can I cancel anytime?", a: "Yes. You can cancel your subscription at any time. You will keep access until the end of your billing period." },
-    { q: "Do you offer support?", a: "Free tier includes community support. Pro and Team plans include priority email support and optional onboarding calls." },
-    { q: "Is my data secure?", a: "Yes. We use industry-standard encryption and do not share your data with third parties. You can export or delete your data anytime." },
+    { q: "What is this platform?", a: "This is an AI generated website." },
+    { q: "Can I customize it?", a: "Yes. All components are editable." },
+    { q: "Is it production ready?", a: "Yes. It generates clean React code." }
   ];
+
   return (
-    <section id="faq" className="py-24 px-6 bg-gradient-to-b from-white to-slate-50/50">
-      <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">Frequently Asked Questions</h2>
-        <p className="text-slate-600 mb-10">Everything you need to know.</p>
-        <div className="space-y-4">
-          {items.map((item, i) => (
-            <div key={i} className={\`rounded-2xl border overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow \${open === i ? "border-l-4 border-l-indigo-500 border-slate-200" : "border-slate-200"}\`}>
-              <button type="button" onClick={() => setOpen(open === i ? null : i)} className="w-full flex items-center justify-between gap-4 p-5 text-left">
-                <span className="font-semibold text-slate-900">{item.q}</span>
-                <span className="text-xl text-indigo-500 flex-shrink-0 font-light">{open === i ? "−" : "+"}</span>
-              </button>
-              {open === i && <div className="px-5 pb-5 pt-0 text-slate-600 leading-relaxed border-t border-slate-100">{item.a}</div>}
-            </div>
-          ))}
-        </div>
-        <p className="mt-10 text-center text-slate-600">Can't find an answer? <a href="#contact" className="text-indigo-600 font-semibold hover:underline">Contact us</a>.</p>
+    <section id="faq" className="py-20">
+      <h2 className="text-3xl font-bold text-center mb-10">FAQ</h2>
+      <div className="max-w-2xl mx-auto">
+        {items.map((item, i) => (
+          <div key={i} className="border-b py-4">
+            <button
+              className="font-semibold w-full text-left"
+              onClick={() => setOpen(open === i ? null : i)}
+            >
+              {item.q}
+            </button>
+            {open === i && <p className="mt-2 text-gray-600">{item.a}</p>}
+          </div>
+        ))}
       </div>
     </section>
   );
-}`;
+}
+`;
 
 const DEFAULT_CONTACT_TSX = `import React from "react";
 export default function Contact() {
@@ -662,6 +669,41 @@ export default function Contact() {
 function isStubContent(content: string, minLen = 400): boolean {
   const s = String(content || "").trim();
   return s.length < minLen || !s.includes("id=") || /placeholder|TODO|coming soon/i.test(s);
+}
+
+const MINIMAL_INDEX_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>App</title></head>
+<body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
+</html>`;
+
+const MINIMAL_MAIN_TSX = `import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+ReactDOM.createRoot(document.getElementById("root")!).render(<React.StrictMode><App /></React.StrictMode>);
+`;
+
+/** Ensure App.tsx, index.html, and main.tsx exist in the file list; add minimal versions if missing. */
+function ensureRequiredFiles(
+  files: { path: string; content: string; type: "file" }[]
+): { path: string; content: string; type: "file" }[] {
+  const out = [...files];
+  const has = (p: string) => out.some((f) => f.path === p || f.path === p.replace("src/", ""));
+  if (!has("src/App.tsx")) {
+    const appContent = out.find((f) => f.path === "App.tsx")?.content;
+    out.push({
+      path: "src/App.tsx",
+      content: typeof appContent === "string" ? appContent : "export default function App() { return <div>App</div>; }",
+      type: "file",
+    });
+  }
+  if (!has("index.html")) {
+    out.push({ path: "index.html", content: MINIMAL_INDEX_HTML, type: "file" });
+  }
+  if (!has("src/main.tsx")) {
+    out.push({ path: "src/main.tsx", content: MINIMAL_MAIN_TSX, type: "file" });
+  }
+  return out;
 }
 
 function ensureAboutFaqContact(
@@ -716,11 +758,11 @@ async function handleRequest(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  if (!process.env.OPENAI_API_KEY) {
+    console.error("[Config Error] Missing OPENAI_API_KEY");
     return res.status(500).json({
       success: false,
-      error: "OPENAI_API_KEY is not set. In Vercel: Project Settings → Environment Variables → add OPENAI_API_KEY (your OpenAI key), then redeploy.",
+      error: "Missing OPENAI_API_KEY environment variable",
     });
   }
 
@@ -748,7 +790,6 @@ async function handleRequest(req: VercelRequest, res: VercelResponse) {
       });
     }
     try {
-      const openai = new OpenAI({ apiKey });
       const userMessage = `User instruction: ${prompt}\n\nExisting src/App.tsx:\n\`\`\`tsx\n${appFile.content}\n\`\`\`\n\nReturn the full updated App.tsx as JSON in the "files" array. Only include the modified src/App.tsx.`;
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -808,26 +849,26 @@ async function handleRequest(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const openai = new OpenAI({ apiKey });
-    const pipeline = await runPipeline(prompt, openai, console.log);
+    console.log("[Pipeline] Starting generation");
+    const result = await runPipeline(prompt, openai, console.log);
+    console.log("[Pipeline] Completed");
 
-    if (pipeline.status === "error") {
-      const errMsg = (pipeline.error && String(pipeline.error).trim()) || "Generation failed. Check server logs for details.";
+    if (result.status === "error") {
+      const errMsg = (result.error && String(result.error).trim()) || "Generation failed";
       return res.status(500).json({
         success: false,
         error: errMsg,
       });
     }
-    if (!pipeline.files?.length) {
-      const errMsg = (pipeline.error && String(pipeline.error).trim()) || "Pipeline produced no files. Try a different prompt or check your API key.";
+    if (!result.files?.length) {
+      const errMsg = (result.error && String(result.error).trim()) || "Pipeline produced no files";
       return res.status(500).json({
         success: false,
         error: errMsg,
       });
     }
-    const pipelineResult = pipeline;
 
-    let files: { path: string; content: string; type: "file" }[] = pipelineResult.files.map((f) => ({
+    let files: { path: string; content: string; type: "file" }[] = result.files.map((f) => ({
       path: f.path,
       content: f.content,
       type: "file" as const,
@@ -841,23 +882,23 @@ async function handleRequest(req: VercelRequest, res: VercelResponse) {
       if (idx !== -1) files[idx] = { ...files[idx], content: patchedApp };
     }
 
-    const name = "app";
-    const description = prompt;
+    files = ensureRequiredFiles(files);
+
     return res.status(200).json({
       success: true,
-      project: { name, description, files },
+      project: { name: "app", description: prompt, files },
       pipeline: {
-        status: pipelineResult.status,
-        files_created: pipelineResult.files_created,
-        fixes_applied: pipelineResult.fixes_applied,
+        status: result.status,
+        files_created: result.files_created,
+        fixes_applied: result.fixes_applied,
       },
     });
   } catch (err) {
-    console.error("Generate error:", err);
+    console.error("[Pipeline Error]", err);
     const message = getErrorMessage(err);
     return res.status(500).json({
       success: false,
-      error: message,
+      error: err?.message || message || "Generation failed",
     });
   }
 }
