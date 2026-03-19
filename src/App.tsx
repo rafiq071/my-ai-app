@@ -260,10 +260,10 @@ export default function App() {
       clearTimeout(timeoutId);
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const msg =
-          res.status === 404
-            ? "API not found. Run 'npm run dev' (starts both app and API) or run 'npm run dev:api' in another terminal."
-            : json.message || res.statusText || "Generation failed";
+const msg =
+            res.status === 404
+              ? "API not found. Run 'npm run dev' (starts both app and API) or run 'npm run dev:api' in another terminal."
+              : json.error || json.message || res.statusText || "Generation failed";
         setAiError(msg);
         return;
       }

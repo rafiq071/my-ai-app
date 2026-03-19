@@ -780,14 +780,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const openai = new OpenAI({ apiKey });
-    const pipelineResult = await runPipeline(prompt, openai, (msg) => console.log(msg));
+    const pipeline = await runPipeline(prompt, openai, console.log);
 
-    if (pipelineResult.status === "error" || !pipelineResult.files?.length) {
+    if (pipeline.status === "error") {
       return res.status(500).json({
-        error: true,
-        message: pipelineResult.error ?? "Pipeline produced no files",
+        success: false,
+        error: pipeline.error || "Generation failed",
       });
     }
+    if (!pipeline.files?.length) {
+      return res.status(500).json({
+        success: false,
+        error: pipeline.error || "Pipeline produced no files",
+      });
+    }
+    const pipelineResult = pipeline;
 
     let files: { path: string; content: string; type: "file" }[] = pipelineResult.files.map((f) => ({
       path: f.path,
@@ -816,7 +823,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     console.error("Generate error:", err);
-    const message = err instanceof Error ? err.message : "Generation failed";
-    return res.status(500).json({ error: true, message });
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({
+      success: false,
+      error: message || "Generation failed",
+    });
   }
 }
