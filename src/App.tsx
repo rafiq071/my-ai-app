@@ -276,14 +276,14 @@ export default function App() {
         setAiError(msg);
         return;
       }
-      const files = json.project?.files ?? json.files ?? [];
+      const files = (json.project?.files ?? json.files ?? []) as { path?: string; name?: string; content?: string }[];
       if (files.length === 0) {
         setAiError("No files returned");
         return;
       }
       for (const file of files) {
-        const path = file.path || file.name;
-        if (isConfigPath(path)) continue;
+        const path = file.path || file.name || "";
+        if (!path || isConfigPath(path)) continue;
         const content = file.content ?? "";
         const existing = projectFiles.find((p) => p.path === path);
         if (existing) {
